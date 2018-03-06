@@ -14,7 +14,7 @@
 #include "OpenKinectViewer/Viewer.h"
 
 // Timeout for reading a device frame (10 seconds)
-#define FRAME_TIMEOUT 10000;
+#define FRAME_TIMEOUT 10000
 
 // Globals for signal handlers
 bool sig_global_shutdown;
@@ -32,15 +32,15 @@ void sigusr1_handler(int s) {
     sig_global_pause = !sig_global_pause;
 }
 
-int openDevice(libfreenect2::Freenect2 freenect, libfreenect2::Freenect2Device *device) {
-    if(freenect2.enumerateDevices() == 0) {
+int connectDevice(libfreenect2::Freenect2 *freenect, libfreenect2::Freenect2Device **device) {
+    if(freenect->enumerateDevices() == 0) {
         std::cout << "KinectDepth: No device connected." << std::endl;
         return -1;
     }
 
-    std::string deviceSerial = freenect.getDefaultDeviceSerialNumber();
-    device = freenect.openDevice(deviceSerial);
-    if (device == NULL) {
+    std::string deviceSerial = freenect->getDefaultDeviceSerialNumber();
+    *device = freenect->openDevice(deviceSerial);
+    if (*device == NULL) {
         std::cout << "KinectDepth: Cannot open device." << std::endl;
         return -1;
     }
@@ -61,20 +61,16 @@ int runDevice(libfreenect2::Freenect2Device *device, bool captureColor, bool cap
     // Determine frame types
     int frameTypes = 0;
     if (captureColor) {
-        frameTypes != libfreenect2::Frame::Color;
+        frameTypes |= libfreenect2::Frame::Color;
     }
     if (captureDepthAndIr) {
-        frameTypes != (libfreenect2::Frame::Depth | libfreenect2::Frame::Ir);
+        frameTypes |= (libfreenect2::Frame::Depth | libfreenect2::Frame::Ir);
     }
 
     // Initialize frame listener
-    libfreenect2::SyncMultiFrameListener frameListener(frameTypes);
-    if (captureColor) {
-        device->setColorFrameListener(&frameListener);
-    }
-    if (captureDepthAndIr) {
-        device->setIrAndDepthFrameListener(&frameListener);
-    }
+    libfreenect2::SyncMultiFrameListener listener(frameTypes);
+    device->setColorFrameListener(&listener);
+    device->setIrAndDepthFrameListener(&listener);
 
     // Start device
     if (!device->start()) {
@@ -85,12 +81,12 @@ int runDevice(libfreenect2::Freenect2Device *device, bool captureColor, bool cap
     // Start viewer
     Viewer viewer;
     if (displayViewer) {
-        viewer->initialize();
+        viewer.initialize();
     }
 
     // Initialize frames
     libfreenect2::FrameMap frames;
-    libfreenect2::Registration* registration = new libfreenect2::Registration(dev->getIrCameraParams(), dev->getColorCameraParams());
+    libfreenect2::Registration* registration = new libfreenect2::Registration(device->getIrCameraParams(), device->getColorCameraParams());
     libfreenect2::Frame frame_undistorted(512, 424, 4), frame_registered(512, 424, 4);
 
     // Loop until shutdown signal
@@ -102,21 +98,21 @@ int runDevice(libfreenect2::Freenect2Device *device, bool captureColor, bool cap
         }
 
         // Filter frames
-        libfreenect2::Frame *frame_rgb = frames[libfreenect2::Frame::Color];
+        libfreenect2::Frame *frame_color = frames[libfreenect2::Frame::Color];
         libfreenect2::Frame *frame_depth = frames[libfreenect2::Frame::Depth];
         libfreenect2::Frame *frame_ir = frames[libfreenect2::Frame::Ir];
         if (captureColor && captureDepthAndIr) {
-            registration->apply(frame_rgb, frame_depth, &frame_undistorted, &frame_registered);
+            registration->apply(frame_color, frame_depth, &frame_undistorted, &frame_registered);
         }
 
         // Display frames
         if (displayViewer) {
             if (captureColor) {
-                viewer.addFrame("color", frame_rgb);
+                viewer.addFrame("RGB", frame_color);
             }
             if (captureDepthAndIr) {
-                viewer.addFrame("depth", frame_depth);
                 viewer.addFrame("ir", frame_ir);
+                viewer.addFrame("depth", frame_depth);
             }
             if (captureColor && captureDepthAndIr) {
                 viewer.addFrame("registered", &frame_registered);
@@ -140,7 +136,7 @@ int main(int argc, char *argv[]) {
     libfreenect2::Freenect2 freenect;
     libfreenect2::Freenect2Device *device;
     
-    if (openDevice(freenect, device) < 0) {
+    if (connectDevice(&freenect, &device) < 0) {
         return -1;
     }
 
