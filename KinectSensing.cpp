@@ -11,7 +11,7 @@
 #include <libfreenect2/frame_listener_impl.h>
 #include <libfreenect2/registration.h>
 
-#include "viewer.h"
+#include "OpenKinectViewer/Viewer.h"
 
 // Timeout for reading a device frame (10 seconds)
 #define FRAME_TIMEOUT 10000;
