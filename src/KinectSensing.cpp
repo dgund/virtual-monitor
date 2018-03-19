@@ -16,7 +16,7 @@
 // Timeout for reading a device frame (10 seconds)
 #define FRAME_TIMEOUT 10000
 
-// Globals for signal handlers
+// Signal handlers
 bool sig_global_shutdown;
 bool sig_global_pause;
 libfreenect2::Freenect2Device *sig_global_pause_device;
@@ -30,6 +30,30 @@ void sigusr1_handler(int s) {
     if (sig_global_pause) sig_global_pause_device->start();
     else sig_global_pause_device->stop();
     sig_global_pause = !sig_global_pause;
+}
+
+// Helper functions for Kinect setup
+int connectDevice(libfreenect2::Freenect2 *freenect, libfreenect2::Freenect2Device **device);
+int registerSignalsForDevice(libfreenect2::Freenect2Device *device);
+int runDevice(libfreenect2::Freenect2Device *device, bool captureColor, bool captureDepthAndIr, bool displayViewer);
+
+int main(int argc, char *argv[]) {
+    libfreenect2::Freenect2 freenect;
+    libfreenect2::Freenect2Device *device;
+    
+    if (connectDevice(&freenect, &device) < 0) {
+        return -1;
+    }
+
+    if(registerSignalsForDevice(device) < 0) {
+        return -1;
+    }
+
+    if (runDevice(device, true, true, true) < 0) {
+        return -1;
+    }
+
+    return 0;
 }
 
 int connectDevice(libfreenect2::Freenect2 *freenect, libfreenect2::Freenect2Device **device) {
@@ -129,24 +153,5 @@ int runDevice(libfreenect2::Freenect2Device *device, bool captureColor, bool cap
     device->stop();
     device->close();
     delete registration;
-    return 0;
-}
-
-int main(int argc, char *argv[]) {
-    libfreenect2::Freenect2 freenect;
-    libfreenect2::Freenect2Device *device;
-    
-    if (connectDevice(&freenect, &device) < 0) {
-        return -1;
-    }
-
-    if(registerSignalsForDevice(device) < 0) {
-        return -1;
-    }
-
-    if (runDevice(device, true, true, true) < 0) {
-        return -1;
-    }
-
     return 0;
 }
