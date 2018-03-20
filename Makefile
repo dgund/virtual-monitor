@@ -1,7 +1,7 @@
 CC = g++
 LD = g++
 CFLAGS = -g -Wall
-TARGET = KinectSensing
+TARGET = VirtualMonitor
 
 ifeq ($(shell uname -s), Darwin)
 	LIBFREENECT = -L. /usr/local/lib/libfreenect2.0.2.0.dylib /usr/local/lib/libglfw.3.2.dylib
