@@ -207,7 +207,7 @@ bool Viewer::render()
         gl()->glEnableVertexAttribArray(texcoord_attr);
 
 
-        if (iter->first == "RGB" || iter->first == "registered")
+        if (iter->first == VIEWER_FRAME_COLOR || iter->first == VIEWER_FRAME_REGISTERED)
         {
             renderShader.use();
 

@@ -63,10 +63,10 @@ int runViewerForever(KinectReader *reader) {
             break;
         }
 
-        viewer.addFrame("RGB", frames->color);
-        viewer.addFrame("ir", frames->infrared);
-        viewer.addFrame("depth", frames->depth);
-        viewer.addFrame("registered", frames->colorDepthRegistered);
+        viewer.addFrame(VIEWER_FRAME_COLOR, frames->color);
+        viewer.addFrame(VIEWER_FRAME_INFRARED, frames->infrared);
+        viewer.addFrame(VIEWER_FRAME_DEPTH, frames->depth);
+        viewer.addFrame(VIEWER_FRAME_REGISTERED, frames->colorDepthRegistered);
 
         shutdown = shutdown || viewer.render();
 
