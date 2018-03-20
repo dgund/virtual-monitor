@@ -22,6 +22,11 @@ OBJ_LIST = $(SRC_LIST:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
 mkdir_if_necessary = @mkdir -p $(@D)
 
+all: $(BIN_DIR)/$(TARGET)
+
+debug: CFLAGS += -DDEBUG
+debug: $(BIN_DIR)/$(TARGET)
+
 $(BIN_DIR)/$(TARGET): $(OBJ_LIST)
 	$(mkdir_if_necessary)
 	$(LD) $(OBJ_LIST) $(LDFLAGS) -o $@

@@ -5,8 +5,8 @@
 */
 
 #include "Viewer.h"
-#include <cstdlib>
 
+#include <cstdlib>
 
 Viewer::Viewer() : shader_folder("src/shader/"), 
                    win_width(600),

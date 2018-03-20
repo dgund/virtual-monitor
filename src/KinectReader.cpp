@@ -4,8 +4,10 @@
 */
 
 #include "KinectReader.h"
-#include <iostream>
+
 #include <unistd.h>
+#include <iostream>
+
 #include <libfreenect2/logger.h>
 
 #define LIBFREENECT_FRAME_NONE 0
