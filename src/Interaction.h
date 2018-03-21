@@ -25,7 +25,7 @@ struct Interaction {
     InteractionType type;
     PhysicalLocation *physicalLocation;
     VirtualLocation *virtualLocation;
-}
+};
 
 } /* namespace virtualMonitor */
 
