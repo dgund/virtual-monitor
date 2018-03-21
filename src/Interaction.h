@@ -6,6 +6,8 @@
 #ifndef INTERACTION_H
 #define INTERACTION_H
 
+#include <ctime>
+
 #include "Location.h"
 
 namespace virtualMonitor {
@@ -23,6 +25,7 @@ enum InteractionType {
 
 struct Interaction {
     InteractionType type;
+    std::time_t time;
     PhysicalLocation *physicalLocation;
     VirtualLocation *virtualLocation;
 };
