@@ -14,6 +14,8 @@ class InteractionHandler {
     public:
         InteractionHandler();
         ~InteractionHandler();
+
+        virtual int handleInteraction(Interaction *interaction);
 };
 
 } /* namespace virtualMonitor */

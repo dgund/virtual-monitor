@@ -18,4 +18,8 @@ InteractionHandler::~InteractionHandler() {
 
 }
 
+int InteractionHandler::handleInteraction(Interaction *interaction) {
+    return 0;
+}
+
 } /* namespace virtualMonitor */
