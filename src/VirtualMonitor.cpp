@@ -26,10 +26,11 @@ int main(int argc, char *argv[]) {
 
     InteractionDetector *interactionDetector = new InteractionDetector();
 
-    interactionDetector->start(true);
+    bool displayViewer = true;
+    interactionDetector->start(displayViewer);
 
     while (!global_shutdown) {
-        Interaction *interaction = interactionDetector->checkForInteraction();
+        Interaction *interaction = interactionDetector->detectInteraction();
         if (interaction == NULL) {
             global_shutdown = true;
         }

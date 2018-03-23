@@ -12,11 +12,13 @@ namespace virtualMonitor {
 
 InteractionDetector::InteractionDetector() {
     this->reader = new KinectReader();
+    this->physicalManager = new PhysicalManager();
     this->viewer = new Viewer();
 }
 
 InteractionDetector::~InteractionDetector() {
     delete this->reader;
+    delete this->physicalManager;
     delete this->viewer;
 }
 
@@ -34,14 +36,14 @@ int InteractionDetector::start(bool displayViewer) {
     return 0;
 }
 
-Interaction *InteractionDetector::checkForInteraction() {
+Interaction *InteractionDetector::detectInteraction() {
     KinectReaderFrames *frames = this->reader->readFrames();
     if (frames == NULL) {
         std::cout << "Virtual Monitor: Could not read frames." << std::endl;
         return NULL;
     }
 
-    Interaction *interaction = new Interaction();
+    Interaction *interaction = this->physicalManager->detectInteraction(frames->depth);
 
     if (this->displayViewer) {
         this->viewer->addFrame(VIEWER_FRAME_COLOR, frames->color);

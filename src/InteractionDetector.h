@@ -8,6 +8,7 @@
 
 #include "KinectReader.h"
 #include "Interaction.h"
+#include "PhysicalManager.h"
 #include "Viewer.h"
 
 namespace virtualMonitor {
@@ -18,11 +19,12 @@ class InteractionDetector {
         virtual ~InteractionDetector();
 
         virtual int start(bool displayViewer=false);
-        virtual Interaction *checkForInteraction();
+        virtual Interaction *detectInteraction();
         virtual int stop();
 
     private:
         KinectReader *reader;
+        PhysicalManager *physicalManager;
         Viewer *viewer;
         bool displayViewer;
 };
