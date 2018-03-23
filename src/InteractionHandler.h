@@ -13,7 +13,7 @@ namespace virtualMonitor {
 class InteractionHandler {
     public:
         InteractionHandler();
-        ~InteractionHandler();
+        virtual ~InteractionHandler();
 
         virtual int handleInteraction(Interaction *interaction);
 };

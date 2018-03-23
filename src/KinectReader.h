@@ -39,7 +39,7 @@ public:
 
     virtual int start();
     virtual KinectReaderFrames *readFrames();
-    int releaseFrames(KinectReaderFrames *frames);
+    virtual int releaseFrames(KinectReaderFrames *frames);
     virtual int stop();
 };
 

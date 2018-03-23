@@ -6,15 +6,25 @@
 #ifndef INTERACTIONDETECTOR_H
 #define INTERACTIONDETECTOR_H
 
-#include "Calibration.h"
+#include "KinectReader.h"
 #include "Interaction.h"
+#include "Viewer.h"
 
 namespace virtualMonitor {
 
 class InteractionDetector {
     public:
         InteractionDetector();
-        ~InteractionDetector();
+        virtual ~InteractionDetector();
+
+        virtual int start(bool displayViewer=false);
+        virtual Interaction *checkForInteraction();
+        virtual int stop();
+
+    private:
+        KinectReader *reader;
+        Viewer *viewer;
+        bool displayViewer;
 };
 
 } /* namespace virtualMonitor */
