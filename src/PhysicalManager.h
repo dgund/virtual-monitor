@@ -23,7 +23,7 @@ class PhysicalManager {
 
     private:
         virtual float depthPixel(libfreenect2::Frame* depthFrame, int x, int y);
-        virtual int readDepthFrameFromFile(libfreenect2::Frame* depthFrame, std::string depthFrameFilename);
+        virtual libfreenect2::Frame *readDepthFrameFromFile(std::string depthFrameFilename);
         virtual int writeDepthFrameToFile(libfreenect2::Frame* depthFrame, std::string depthFrameFilename);
         virtual int writeDepthFrameToPPM(libfreenect2::Frame* depthFrame, std::string ppmFilename);
 };
