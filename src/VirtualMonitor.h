@@ -8,10 +8,10 @@
 
 #undef VIRTUALMONITOR_VIEWER
 
-// Uncomment to enable the Viewer to display sensor data
-#define VIRTUALMONITOR_VIEWER
+// Uncomment to use test inputs instead of the live Kinect
+#define VIRTUALMONITOR_TEST_INPUTS
 
-// The timeout (in milliseconds) for reading sensor data
-#define VIRTUALMONITOR_DEVICE_TIMEOUT 10000
+// Uncomment to enable the Viewer to display live Kinect data
+//#define VIRTUALMONITOR_VIEWER
 
 #endif /* VIRTUALMONITOR_H */

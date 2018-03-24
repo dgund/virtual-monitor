@@ -21,6 +21,7 @@ class InteractionDetector {
         virtual int start(bool displayViewer=false);
         virtual Interaction *detectInteraction();
         virtual int stop();
+        virtual Interaction *testDetectInteraction();
 
     private:
         KinectReader *reader;

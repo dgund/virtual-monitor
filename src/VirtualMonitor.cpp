@@ -26,17 +26,24 @@ int main(int argc, char *argv[]) {
 
     InteractionDetector *interactionDetector = new InteractionDetector();
 
-    bool displayViewer = true;
+#ifdef VIRTUALMONITOR_TEST_INPUTS
+    // Use test inputs for interaction detection
+    interactionDetector->testDetectInteraction();
+#else
+    // Use the Kinect sensor for continuous interaction detection
+    bool displayViewer = false;
+#ifdef VIRTUALMONITOR_VIEWER
+    displayViewer = true;
+#endif
     interactionDetector->start(displayViewer);
-
     while (!global_shutdown) {
         Interaction *interaction = interactionDetector->detectInteraction();
         if (interaction == NULL) {
             global_shutdown = true;
         }
     }
-
     interactionDetector->stop();
+#endif
 
     delete interactionDetector;
     return 0;

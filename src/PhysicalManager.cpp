@@ -52,6 +52,11 @@ float PhysicalManager::depthPixel(libfreenect2::Frame* depthFrame, int x, int y)
 
 libfreenect2::Frame *PhysicalManager::readDepthFrameFromFile(std::string depthFrameFilename) {
     std::ifstream depthFile(depthFrameFilename, std::ios::binary | std::ios::ate);
+    if (!depthFile.is_open()) {
+        std::cout << "PhysicalManager: Could not read depth frame." << std::endl;
+        return NULL;
+    }
+
     std::ifstream::pos_type pos = depthFile.tellg();
     int byte_count = pos;
 
@@ -67,6 +72,7 @@ libfreenect2::Frame *PhysicalManager::readDepthFrameFromFile(std::string depthFr
 int PhysicalManager::writeDepthFrameToFile(libfreenect2::Frame* depthFrame, std::string depthFrameFilename) {
     std::ofstream depthFile(depthFrameFilename, std::ios::binary);
     if (!depthFile.is_open()) {
+        std::cout << "PhysicalManager: Could not write depth frame." << std::endl;
         return -1;
     }
 
@@ -79,6 +85,7 @@ int PhysicalManager::writeDepthFrameToFile(libfreenect2::Frame* depthFrame, std:
 int PhysicalManager::writeDepthFrameToPPM(libfreenect2::Frame* depthFrame, std::string ppmFilename) {
     std::ofstream ppmFile(ppmFilename);
     if (!ppmFile.is_open()) {
+        std::cout << "PhysicalManager: Could not write depth frame to ppm." << std::endl;
         return -1;
     }
     int maximumIntensity = 255;

@@ -61,6 +61,11 @@ Interaction *InteractionDetector::detectInteraction() {
     return interaction;
 }
 
+Interaction *InteractionDetector::testDetectInteraction() {
+    Interaction *interaction = this->physicalManager->detectInteraction("inputs/surface.bin");
+    return interaction;
+}
+
 int InteractionDetector::stop() {
     this->reader->stop();
     return 0;
