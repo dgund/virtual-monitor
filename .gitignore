@@ -2,9 +2,6 @@
 bin/
 build/
 
-# Depth image output files
-*.ppm
-
 # Prerequisites
 *.d
 

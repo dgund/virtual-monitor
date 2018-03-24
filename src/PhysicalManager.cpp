@@ -89,8 +89,8 @@ int PhysicalManager::writeDepthFrameToPPM(libfreenect2::Frame* depthFrame, std::
         int x = 0;
         while (x < depthFrame->width) {
             float depth = depthPixel(depthFrame, x, y);
-            //int depth_image = (int)((depth / 6000) * 255);
-            int depth_image = (int)depth % 256;
+            int depth_image = (int)((depth / 5000) * 255);
+            //int depth_image = (int)depth % 256;
             ppmFile << depth_image << " " << depth_image << " " << depth_image << " ";
             x++;
         }
