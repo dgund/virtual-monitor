@@ -23,9 +23,11 @@ class PhysicalManager {
 
     private:
         virtual float depthPixel(libfreenect2::Frame* depthFrame, int x, int y);
+        virtual float avgDepthPixel(libfreenect2::Frame* depthFrame, int x, int y, int delta);
         virtual libfreenect2::Frame *readDepthFrameFromFile(std::string depthFrameFilename);
         virtual int writeDepthFrameToFile(libfreenect2::Frame* depthFrame, std::string depthFrameFilename);
         virtual int writeDepthFrameToPPM(libfreenect2::Frame* depthFrame, std::string ppmFilename);
+        virtual void powerRegression(float *x, float *y, int n, float *a, float *b);
 };
 
 } /* namespace virtualMonitor */

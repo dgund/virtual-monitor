@@ -62,7 +62,12 @@ Interaction *InteractionDetector::detectInteraction() {
 }
 
 Interaction *InteractionDetector::testDetectInteraction() {
-    Interaction *interaction = this->physicalManager->detectInteraction("inputs/surface.bin");
+    this->start(false);
+    KinectReaderFrames *frames = this->reader->readFrames();
+    Interaction *interaction = this->physicalManager->detectInteraction(frames->depth);
+    this->reader->releaseFrames(frames);
+    this->stop();
+    //Interaction *interaction = this->physicalManager->detectInteraction("inputs/interaction1.bin");
     return interaction;
 }
 
