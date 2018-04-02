@@ -56,9 +56,30 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame)
         this->setReferenceFrame(depthFrame);
     }
 
+    std::string *pixelColors = new std::string[depthFrame->width * depthFrame->height];
+
+    for (int y = depthFrame->height - 1; 0 <= y; y--) {
+        for (int x = 0; x < depthFrame->width; x++) {
+            std::string pixelColor = "0 0 0"; // black
+
+            float depth = this->pixelDepth(depthFrame, x, y);
+            if (DEPTH_MIN < depth && depth < DEPTH_MAX) {
+                pixelColor = "255 0 0"; // red
+            }
+
+            if (this->isPixelOnSurface(depthFrame, x, y, 2)) {
+                pixelColor = "0 255 0"; // green
+            }
+
+            pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = pixelColor;
+        }
+    }
+
+    this->writeDepthPixelColorsToPPM(pixelColors, "result-interaction.ppm");
+    delete[] pixelColors;
+    
     this->writeDepthFrameToSurfaceDepthPPM(depthFrame, "result-depth.ppm");
     this->writeDepthFrameToSurfaceSlopePPM(depthFrame, "result-slope.ppm");
-    this->writeDepthFrameToInteractionPPM(depthFrame, "result-interaction.ppm");
 
     return interaction;
 }
@@ -218,97 +239,81 @@ int PhysicalManager::writeDepthFrameToFile(libfreenect2::Frame *depthFrame, std:
 }
 
 int PhysicalManager::writeDepthFrameToPPM(libfreenect2::Frame *depthFrame, std::string ppmFilename) {
-    std::ofstream ppmFile(ppmFilename);
-    if (!ppmFile.is_open()) {
-        std::cout << "PhysicalManager: Could not write depth frame to ppm." << std::endl;
-        return -1;
-    }
-    int maximumIntensity = 255;
-    ppmFile << "P3 " << depthFrame->width << " " << depthFrame->height << " " << maximumIntensity << "\n";
+    std::string *pixelColors = new std::string[depthFrame->width * depthFrame->height];
 
     for (int y = 0; y < depthFrame->height; y++) {
         for (int x = 0; x < depthFrame->width; x++) {
             float depth = pixelDepth(depthFrame, x, y);
             //int depth_image = (int)((depth / 5000) * 255);
             int depth_image = (int)depth % 256;
-            ppmFile << depth_image << " " << depth_image << " " << depth_image << " ";
+            std::ostringstream pixelColorStream;
+            pixelColorStream << depth_image << " " << depth_image << " " << depth_image;
+            pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = pixelColorStream.str();
         }
-        ppmFile << "\n";
     }
 
-    ppmFile.close();
-    return 0;
+    int result = this->writeDepthPixelColorsToPPM(pixelColors, ppmFilename);
+    delete[] pixelColors;
+    return result;
 }
 
 int PhysicalManager::writeDepthFrameToSurfaceDepthPPM(libfreenect2::Frame *depthFrame, std::string ppmFilename) {
-    std::ofstream ppmFile(ppmFilename);
-    if (!ppmFile.is_open()) {
-        std::cout << "PhysicalManager: Could not write depth frame to ppm." << std::endl;
-        return -1;
-    }
-    int maximumIntensity = 255;
-    ppmFile << "P3 " << depthFrame->width << " " << depthFrame->height << " " << maximumIntensity << "\n";
+    std::string *pixelColors = new std::string[depthFrame->width * depthFrame->height];
 
     for (int y = 0; y < depthFrame->height; y++) {
         for (int x = 0; x < depthFrame->width; x++) {
             float depth = this->pixelDepth(depthFrame, x, y);
             float surfaceDepth = this->pixelSurfaceRegression(x, y);
             float depthDifference = std::abs(depth - surfaceDepth);
-            std::string pixelColor = "0 0 0 "; // black
+            std::string pixelColor = "0 0 0"; // black
 
             if (DEPTH_MIN < depth && depth < DEPTH_MAX) {
-                pixelColor = "100 0 0 "; // dark red
+                pixelColor = "100 0 0"; // dark red
             }
 
             if (depthDifference < 300) {
-                pixelColor = "255 0 0 "; // red
+                pixelColor = "255 0 0"; // red
             }
 
             if (depthDifference < 250) {
-                pixelColor = "255 155 0 "; // orange
+                pixelColor = "255 155 0"; // orange
             }
 
             if (depthDifference < 200) {
-                pixelColor = "255 255 0 "; // yellow
+                pixelColor = "255 255 0"; // yellow
             }
 
             if (depthDifference < 150) {
-                pixelColor = "0 255 0 "; // green
+                pixelColor = "0 255 0"; // green
             }
 
             if (depthDifference < 100) {
-                pixelColor = "0 0 255 "; // blue
+                pixelColor = "0 0 255"; // blue
             }
 
             if (depthDifference < 50) {
-                pixelColor = "255 0 255 "; // purple
+                pixelColor = "255 0 255"; // purple
             }
 
             if (depthDifference < 25) {
-                pixelColor = "150 150 150 "; // gray
+                pixelColor = "150 150 150"; // gray
             }
 
             if (depthDifference < 10) {
-                pixelColor = "255 255 255 "; // white
+                pixelColor = "255 255 255"; // white
             }
             
-            ppmFile << pixelColor;
+            pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = pixelColor;
         }
-        ppmFile << "\n";
     }
 
-    ppmFile.close();
-    return 0;
+    int result = this->writeDepthPixelColorsToPPM(pixelColors, ppmFilename);
+    delete[] pixelColors;
+    return result;
 }
 
 int PhysicalManager::writeDepthFrameToSurfaceSlopePPM(libfreenect2::Frame *depthFrame, std::string ppmFilename) {
-    std::ofstream ppmFile(ppmFilename);
-    if (!ppmFile.is_open()) {
-        std::cout << "PhysicalManager: Could not write depth frame to ppm." << std::endl;
-        return -1;
-    }
-    int maximumIntensity = 255;
-    ppmFile << "P3 " << depthFrame->width << " " << depthFrame->height << " " << maximumIntensity << "\n";
+    std::string *pixelColors = new std::string[depthFrame->width * depthFrame->height];
 
     for (int y = 0; y < depthFrame->height; y++) {
         for (int x = 0; x < depthFrame->width; x++) {
@@ -323,46 +328,37 @@ int PhysicalManager::writeDepthFrameToSurfaceSlopePPM(libfreenect2::Frame *depth
             float surfaceDepthNext = this->pixelSurfaceRegression(x, yNext);
             float surfaceDepthChange = surfaceDepth - surfaceDepthNext;
 
-            std::string pixelColor = "0 0 0 "; // black
+            std::string pixelColor = "0 0 0"; // black
 
             if (DEPTH_MIN < depth && depth < DEPTH_MAX) {
-                pixelColor = "255 0 0 "; // red
+                pixelColor = "255 0 0"; // red
             }
 
             if (std::abs(depthChange - surfaceDepthChange) < 5.0) {
-                pixelColor = "0 255 0 "; // green
+                pixelColor = "0 255 0"; // green
             }
-            ppmFile << pixelColor;
+            
+            pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = pixelColor;
         }
-        ppmFile << "\n";
     }
 
-    ppmFile.close();
-    return 0;
+    int result = this->writeDepthPixelColorsToPPM(pixelColors, ppmFilename);
+    delete[] pixelColors;
+    return result;
 }
 
-int PhysicalManager::writeDepthFrameToInteractionPPM(libfreenect2::Frame *depthFrame, std::string ppmFilename) {
+int PhysicalManager::writeDepthPixelColorsToPPM(std::string pixelColors[], std::string ppmFilename) {
     std::ofstream ppmFile(ppmFilename);
     if (!ppmFile.is_open()) {
         std::cout << "PhysicalManager: Could not write depth frame to ppm." << std::endl;
         return -1;
     }
     int maximumIntensity = 255;
-    ppmFile << "P3 " << depthFrame->width << " " << depthFrame->height << " " << maximumIntensity << "\n";
+    ppmFile << "P3 " << DEPTH_FRAME_WIDTH << " " << DEPTH_FRAME_HEIGHT << " " << maximumIntensity << "\n";
 
-    for (int y = 0; y < depthFrame->height; y++) {
-        for (int x = 0; x < depthFrame->width; x++) {
-            std::string pixelColor = "0 0 0 "; // black
-
-            float depth = this->pixelDepth(depthFrame, x, y);
-            if (DEPTH_MIN < depth && depth < DEPTH_MAX) {
-                pixelColor = "255 0 0 "; // red
-            }
-
-            if (this->isPixelOnSurface(depthFrame, x, y, 2)) {
-                pixelColor = "0 255 0 "; // green
-            }
-            ppmFile << pixelColor;
+    for (int y = 0; y < DEPTH_FRAME_HEIGHT; y++) {
+        for (int x = 0; x < DEPTH_FRAME_WIDTH; x++) {
+            ppmFile << pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] << " ";
         }
         ppmFile << "\n";
     }

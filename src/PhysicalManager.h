@@ -40,7 +40,7 @@ class PhysicalManager {
         virtual int writeDepthFrameToPPM(libfreenect2::Frame *depthFrame, std::string ppmFilename);
         virtual int writeDepthFrameToSurfaceDepthPPM(libfreenect2::Frame *depthFrame, std::string ppmFilename);
         virtual int writeDepthFrameToSurfaceSlopePPM(libfreenect2::Frame *depthFrame, std::string ppmFilename);
-        virtual int writeDepthFrameToInteractionPPM(libfreenect2::Frame *depthFrame, std::string ppmFilename);
+        virtual int writeDepthPixelColorsToPPM(std::string pixelColors[], std::string ppmFilename);
 };
 
 } /* namespace virtualMonitor */
