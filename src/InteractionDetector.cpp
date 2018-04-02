@@ -61,19 +61,14 @@ Interaction *InteractionDetector::detectInteraction() {
     return interaction;
 }
 
-Interaction *InteractionDetector::testDetectInteraction() {
-    this->start(false);
-    KinectReaderFrames *frames = this->reader->readFrames();
-    Interaction *interaction = this->physicalManager->detectInteraction(frames->depth);
-    this->reader->releaseFrames(frames);
-    this->stop();
-    //Interaction *interaction = this->physicalManager->detectInteraction("inputs/interaction1.bin");
-    return interaction;
-}
-
 int InteractionDetector::stop() {
     this->reader->stop();
     return 0;
+}
+
+Interaction *InteractionDetector::testDetectInteraction() {
+    Interaction *interaction = this->physicalManager->detectInteraction("inputs/interaction1.bin");
+    return interaction;
 }
 
 } /* namespace virtualMonitor */

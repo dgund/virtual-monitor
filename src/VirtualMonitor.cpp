@@ -41,6 +41,10 @@ int main(int argc, char *argv[]) {
         if (interaction == NULL) {
             global_shutdown = true;
         }
+#ifdef VIRTUALMONITOR_TEST_SNAPSHOT
+        // Stop after a single snapshot
+        global_shutdown = true;
+#endif
     }
     interactionDetector->stop();
 #endif
