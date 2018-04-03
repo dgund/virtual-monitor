@@ -8,15 +8,15 @@
 
 namespace virtualMonitor {
 
-struct VirtualLocation {
-    unsigned long x;
-    unsigned long y;
+struct Coord2D {
+    int x;
+    int y;
 };
 
-struct PhysicalLocation {
-    unsigned long x;
-    unsigned long y;
-    unsigned long z;
+struct Coord3D {
+    int x;
+    int y;
+    float z;
 };
 
 } /* namespace virtualMonitor */
