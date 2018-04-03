@@ -26,8 +26,8 @@ enum InteractionType {
 struct Interaction {
     InteractionType type;
     std::time_t time;
-    PhysicalLocation *physicalLocation;
-    VirtualLocation *virtualLocation;
+    Coord3D *physicalLocation;
+    Coord2D *virtualLocation;
 };
 
 } /* namespace virtualMonitor */
