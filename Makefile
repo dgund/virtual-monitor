@@ -1,13 +1,13 @@
-CC = g++
-LD = g++
+CC = g++ -std=c++11
+LD = g++ -std=c++11
 CFLAGS = -g -Wall
 TARGET = VirtualMonitor
 
+LIBFREENECT = -L/usr/local/lib -lfreenect2 -lglfw
+
 ifeq ($(shell uname -s), Darwin)
-	LIBFREENECT = -L. /usr/local/lib/libfreenect2.0.2.0.dylib /usr/local/lib/libglfw.3.2.dylib
 	LIBGL = -framework OpenGL -framework GLUT
 else
-	LIBFREENECT = -libfreenect2 -libglfw
 	LIBGL = -lGL -lglut
 endif
 

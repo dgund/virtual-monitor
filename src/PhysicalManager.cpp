@@ -6,6 +6,7 @@
 #include "PhysicalManager.h"
 
 #include <cmath>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -101,12 +102,12 @@ float PhysicalManager::pixelDepth(libfreenect2::Frame *depthFrame, int x, int y,
                 if (0 <= movingX && movingX < depthFrame->width) {
                     int offset = (movingY * depthFrame->width) + movingX;
                     int byte_offset = offset * depthFrame->bytes_per_pixel;
-                    char depthChar[4] = {depthFrame->data[byte_offset + 0],
-                                         depthFrame->data[byte_offset + 1],
-                                         depthFrame->data[byte_offset + 2],
-                                         depthFrame->data[byte_offset + 3]};
+                    unsigned char depthChar[4] = {depthFrame->data[byte_offset + 0],
+                                                  depthFrame->data[byte_offset + 1],
+                                                  depthFrame->data[byte_offset + 2],
+                                                  depthFrame->data[byte_offset + 3]};
                     float depth;
-                    memcpy(&depth, &depthChar, sizeof(depth));
+                    std::memcpy(&depth, &depthChar, sizeof(depth));
                     depthSum += depth;
                     depthSize++;
                 }
