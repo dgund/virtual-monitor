@@ -7,6 +7,7 @@
 #define PHYSICALMANAGER_H
 
 #include <string>
+#include <vector>
 
 #include "Interaction.h"
 #include "KinectReader.h"
@@ -31,6 +32,9 @@ class PhysicalManager {
         virtual float pixelDepth(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
         virtual float pixelSurfaceRegression(int x, int y);
         virtual bool isPixelOnSurface(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
+        virtual bool isPixelOnSurfaceEdge(libfreenect2::Frame *depthFrame, int x, int y, int *surfaceLeftXForY, int *surfaceRightXForY);
+
+        virtual bool isAnomalySizeAtLeast(libfreenect2::Frame *depthFrame, int x, int y, int *surfaceLeftXForY, int *surfaceRightXForY, int minSize, int delta);
 
         virtual int updateSurfaceRegressionForReference();
         virtual int powerRegression(float *x, float *y, int n, float *a, float *b);
