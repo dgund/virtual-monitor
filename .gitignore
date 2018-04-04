@@ -2,6 +2,10 @@
 bin/
 build/
 
+# PPM Images (except in /inputs)
+*.ppm
+!inputs/*.ppm
+
 # Prerequisites
 *.d
 
