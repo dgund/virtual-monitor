@@ -30,7 +30,7 @@ namespace virtualMonitor {
 
 #define REGRESSION_N 100
 
-#define THRESHOLD_VARIANCE 40000
+#define THRESHOLD_VARIANCE 3000
 
 PhysicalManager::PhysicalManager() {
     this->referenceFrame = NULL;
@@ -117,9 +117,9 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame)
                 if (isPixelAnomaly) {
                     bool isPixelOnSurfaceEdge = this->isPixelOnSurfaceEdge(depthFrame, x, y, surfaceLeftXForY, surfaceRightXForY);
                     if (!isPixelOnSurfaceEdge) {
-                        bool isAnomalySignificant = this->isAnomalySizeAtLeast(depthFrame, x, y, surfaceLeftXForY, surfaceRightXForY, 1000, 2);
+                        bool isAnomalySignificant = this->isAnomalySizeAtLeast(depthFrame, x, y, surfaceLeftXForY, surfaceRightXForY, 700, 2);
                         if (isAnomalySignificant) {             
-                            std::cout << "Interaction point is (" << x << ", " << y << ")" << std::endl;
+                            std::cout << "Potential interaction point is (" << x << ", " << y << ")" << std::endl;
                             pixelColor = "0 0 0"; // black
 
                             float variance = this->findVariance(depthFrame, x, y, 20);
@@ -129,8 +129,8 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame)
                             interactionPoint.x = x;
                             interactionPoint.y = y;
 
-                            if (variance > THRESHOLD_VARIANCE) {
-                                std::cout << "INTERACTION AT: (" << x << ", " << y << ") !!!\n";
+                            if (variance < THRESHOLD_VARIANCE) {
+                                std::cout << "INTERACTION CONFIRMED AT: (" << x << ", " << y << ") depth: " << this->pixelDepth(depthFrame, x, y) << " !!!\n";
                             }
                         }
                     }
@@ -500,11 +500,11 @@ int PhysicalManager::writeDepthFrameToSurfaceSlopePPM(libfreenect2::Frame *depth
             std::string pixelColor = "0 0 0"; // black
 
             if (DEPTH_MIN < depth && depth < DEPTH_MAX) {
-                pixelColor = "255 0 0"; // red
+                pixelColor = "0 255 0"; // green
             }
 
             if (std::abs(depthChange - surfaceDepthChange) < 5.0) {
-                pixelColor = "0 255 0"; // green
+                pixelColor = "255 0 0"; // red
             }
             
             pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = pixelColor;
