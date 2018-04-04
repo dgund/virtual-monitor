@@ -67,7 +67,7 @@ int InteractionDetector::stop() {
 }
 
 Interaction *InteractionDetector::testDetectInteraction() {
-    Interaction *interaction = this->physicalManager->detectInteraction("inputs/interaction1.bin");
+    Interaction *interaction = this->physicalManager->detectInteraction("inputs/interaction2.bin");
     return interaction;
 }
 

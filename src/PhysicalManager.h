@@ -37,6 +37,7 @@ class PhysicalManager {
         virtual bool isAnomalySizeAtLeast(libfreenect2::Frame *depthFrame, int x, int y, int *surfaceLeftXForY, int *surfaceRightXForY, int minSize, int delta);
 
         virtual int updateSurfaceRegressionForReference();
+        virtual int findVariance(libfreenect2::Frame *depthFrame, int x, int y, int boxSize);
         virtual int powerRegression(float *x, float *y, int n, float *a, float *b);
 
         virtual libfreenect2::Frame *readDepthFrameFromFile(std::string depthFrameFilename);
