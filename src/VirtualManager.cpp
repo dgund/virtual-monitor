@@ -48,15 +48,35 @@ double VirtualManager::findArcLength(float A_f, float B_f, int y1, int y2) {
     return len_d;
 }
 
-/* sets private vars for size and position of screen 
+/* sets private vars for size and position of screen in physical coordinates
  * inputs: A and B for power regression, 
            bottom y-value and top y-value of screen */
-void VirtualManager::setScreenLength(float A_f, float B_f, int yBottom, int yTop) {
+void VirtualManager::setScreenPhysical(float A_f, float B_f, int yBottom, int yTop) {
     this->screenLength_d = findArcLength(A_f, B_f, yBottom, yTop);
     this->A_f = A_f;
     this->B_f = B_f;
     this->yBottom = yBottom;
     this->yTop = yTop;
+}
+
+/* sets private vars for size of screen in virtual coordinates */
+void VirtualManager::setScreenVirtual(int screenHeightVirtual, int screenWidthVirtual) {
+    this->screenHeightVirtual = screenHeightVirtual;
+    this->screenWidthVirtual = screenWidthVirtual;
+}
+
+/* takes the physical coordinate of an interaction and updates its 
+   virtual coordinate */
+void VirtualManager::setVirtualCoord(Interaction *interaction) {
+    // make sure VirtualManager private vars have been initialized
+    if (this->A_f == 0.0 || screenHeightVirtual == 0) {
+        // TODO print error
+        return;
+    }
+
+    double interactionHeight_d = findArcLength(this->A_f, this->B_f, yBottom, interaction->physicalLocation->y);
+    double percentageHeight_d = interactionHeight_d / this->screenLength_d;
+    interaction->virtualLocation->y = (int)(((double)screenHeightVirtual) * percentageHeight_d);
 }
 
 }

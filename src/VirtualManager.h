@@ -6,6 +6,8 @@
 #ifndef VIRTUALMANAGER_H
 #define VIRTUALMANAGER__H
 
+#include "Interaction.h"
+
 namespace virtualMonitor {
 
 class VirtualManager {
@@ -15,6 +17,8 @@ class VirtualManager {
         float B_f;
         int yBottom;
         int yTop;
+        int screenHeightVirtual;
+        int screenWidthVirtual;
 
     public: 
         VirtualManager();
@@ -22,7 +26,9 @@ class VirtualManager {
     
     private:
         virtual double findArcLength(float A_f, float B_f, int y1, int y2);
-        virtual void setScreenLength(float A_f, float B_f, int yBottom, int yTop);
+        virtual void setScreenPhysical(float A_f, float B_f, int yBottom, int yTop);
+        virtual void setScreenVirtual(int screenHeightVirtual, int screenWidthVirtual);
+        virtual void setVirtualCoord(Interaction *interaction);
 };
 
 } /* namespace virtualMonitor */
