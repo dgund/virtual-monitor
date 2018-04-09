@@ -25,8 +25,15 @@ class PhysicalManager {
         virtual libfreenect2::Frame* getReferenceFrame() { return this->referenceFrame; };
         virtual int setReferenceFrame(libfreenect2::Frame *referenceFrame);
 
-        virtual Interaction *detectInteraction(libfreenect2::Frame *depthFrame);
-        virtual Interaction *detectInteraction(std::string depthFrameFilename);
+        virtual Interaction *detectInteraction(libfreenect2::Frame *depthFrame, std::string interactionPPMFilename="");
+        virtual Interaction *detectInteraction(std::string depthFrameFilename, std::string interactionPPMFilename="");
+
+        virtual libfreenect2::Frame *readDepthFrameFromFile(std::string depthFrameFilename);
+        virtual int writeDepthFrameToFile(libfreenect2::Frame *depthFrame, std::string depthFrameFilename);
+        virtual int writeDepthFrameToPPM(libfreenect2::Frame *depthFrame, std::string ppmFilename);
+        virtual int writeDepthFrameToSurfaceDepthPPM(libfreenect2::Frame *depthFrame, std::string ppmFilename);
+        virtual int writeDepthFrameToSurfaceSlopePPM(libfreenect2::Frame *depthFrame, std::string ppmFilename);
+        virtual int writeDepthPixelColorsToPPM(std::string pixelColors[], std::string ppmFilename);
 
     private:
         virtual float pixelDepth(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
@@ -39,13 +46,6 @@ class PhysicalManager {
         virtual int updateSurfaceRegressionForReference();
         virtual int findVariance(libfreenect2::Frame *depthFrame, int x, int y, int boxSize);
         virtual int powerRegression(float *x, float *y, int n, float *a, float *b);
-
-        virtual libfreenect2::Frame *readDepthFrameFromFile(std::string depthFrameFilename);
-        virtual int writeDepthFrameToFile(libfreenect2::Frame *depthFrame, std::string depthFrameFilename);
-        virtual int writeDepthFrameToPPM(libfreenect2::Frame *depthFrame, std::string ppmFilename);
-        virtual int writeDepthFrameToSurfaceDepthPPM(libfreenect2::Frame *depthFrame, std::string ppmFilename);
-        virtual int writeDepthFrameToSurfaceSlopePPM(libfreenect2::Frame *depthFrame, std::string ppmFilename);
-        virtual int writeDepthPixelColorsToPPM(std::string pixelColors[], std::string ppmFilename);
 };
 
 } /* namespace virtualMonitor */

@@ -8,6 +8,11 @@
 #include <unistd.h>
 #include <iostream>
 
+#define DEPTH_PPM_FILENAME "output-depth.ppm"
+#define INTERACTION_PPM_FILENAME "output-interaction.ppm"
+#define SURFACEDEPTH_PPM_FILENAME "output-surfacedepth.ppm"
+#define SURFACESLOPE_PPM_FILENAME "output-surfaceslope.ppm"
+
 namespace virtualMonitor {
 
 InteractionDetector::InteractionDetector() {
@@ -36,14 +41,18 @@ int InteractionDetector::start(bool displayViewer) {
     return 0;
 }
 
-Interaction *InteractionDetector::detectInteraction() {
+Interaction *InteractionDetector::detectInteraction(bool outputPPMData) {
     KinectReaderFrames *frames = this->reader->readFrames();
     if (frames == NULL) {
         std::cout << "Virtual Monitor: Could not read frames." << std::endl;
         return NULL;
     }
 
-    Interaction *interaction = this->physicalManager->detectInteraction(frames->depth);
+    std::string interactionPPMFilename = "";
+    if (outputPPMData) {
+        interactionPPMFilename = INTERACTION_PPM_FILENAME;
+    }
+    Interaction *interaction = this->physicalManager->detectInteraction(frames->depth, interactionPPMFilename);
 
     if (this->displayViewer) {
         this->viewer->addFrame(VIEWER_FRAME_COLOR, frames->color);
@@ -56,6 +65,12 @@ Interaction *InteractionDetector::detectInteraction() {
         }
     }
 
+    if (outputPPMData) {
+        this->physicalManager->writeDepthFrameToPPM(frames->depth, DEPTH_PPM_FILENAME);
+        this->physicalManager->writeDepthFrameToSurfaceDepthPPM(frames->depth, SURFACEDEPTH_PPM_FILENAME);
+        this->physicalManager->writeDepthFrameToSurfaceSlopePPM(frames->depth, SURFACESLOPE_PPM_FILENAME);
+    }
+
     this->reader->releaseFrames(frames);
 
     return interaction;
@@ -66,8 +81,24 @@ int InteractionDetector::stop() {
     return 0;
 }
 
-Interaction *InteractionDetector::testDetectInteraction() {
-    Interaction *interaction = this->physicalManager->detectInteraction("inputs/interaction2.bin");
+Interaction *InteractionDetector::testDetectInteraction(bool outputPPMData) {
+    std::string interactionPPMFilename = "";
+    if (outputPPMData) {
+        interactionPPMFilename = INTERACTION_PPM_FILENAME;
+    }
+
+    std::string depthFrameFilename = "inputs/interaction2.bin";
+    libfreenect2::Frame *depthFrame = this->physicalManager->readDepthFrameFromFile(depthFrameFilename);
+    Interaction *interaction = this->physicalManager->detectInteraction(depthFrame, interactionPPMFilename);
+    
+    if (outputPPMData) {
+        this->physicalManager->writeDepthFrameToPPM(depthFrame, DEPTH_PPM_FILENAME);
+        this->physicalManager->writeDepthFrameToSurfaceDepthPPM(depthFrame, SURFACEDEPTH_PPM_FILENAME);
+        this->physicalManager->writeDepthFrameToSurfaceSlopePPM(depthFrame, SURFACESLOPE_PPM_FILENAME);
+    }
+
+    free(depthFrame->data);
+    delete depthFrame;
     return interaction;
 }
 

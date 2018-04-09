@@ -49,7 +49,7 @@ int PhysicalManager::setReferenceFrame(libfreenect2::Frame *referenceFrame) {
     return 0;
 }
 
-Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame) {
+Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame, std::string interactionPPMFilename) {
     assert(depthFrame->width == DEPTH_FRAME_WIDTH);
     assert(depthFrame->height == DEPTH_FRAME_HEIGHT);
     assert(depthFrame->bytes_per_pixel == DEPTH_FRAME_BYTES_PER_PIXEL);
@@ -63,7 +63,11 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame)
         this->setReferenceFrame(depthFrame);
     }
 
-    std::string *pixelColors = new std::string[depthFrame->width * depthFrame->height];
+    bool shouldOutputInteractionPPM = interactionPPMFilename.length() > 0;
+    std::string *pixelColors;
+    if (shouldOutputInteractionPPM) {
+        pixelColors = new std::string[depthFrame->width * depthFrame->height];
+    }
 
     int *surfaceLeftXForY = new int[depthFrame->height];
     int *surfaceRightXForY = new int[depthFrame->height];
@@ -100,12 +104,13 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame)
         for (int x = 0; x < depthFrame->width; x++) {
             bool isWithinSurfaceBounds = (surfaceLeftXForY[y] < depthFrame->width && surfaceLeftXForY[y] <= x && x <= surfaceRightXForY[y]);
             if (!isWithinSurfaceBounds) {
-                pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = "0 0 255"; // blue
+                if (shouldOutputInteractionPPM) {
+                    pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = "0 0 255"; // blue
+                }
                 continue;
             }
 
             std::string pixelColor = "0 0 0"; // black
-
             if (!this->isPixelOnSurface(depthFrame, x, y, 2)) {
                 pixelColor = "0 255 0"; // green
             } else {
@@ -136,26 +141,26 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame)
                     }
                 }
             }
-
-            pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = pixelColor;
+            if (shouldOutputInteractionPPM) {
+                pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = pixelColor;
+            }
         }
     }
 
     delete[] surfaceLeftXForY;
     delete[] surfaceRightXForY;
-
-    this->writeDepthPixelColorsToPPM(pixelColors, "result-interaction.ppm");
-    delete[] pixelColors;
     
-    this->writeDepthFrameToSurfaceDepthPPM(depthFrame, "result-depth.ppm");
-    this->writeDepthFrameToSurfaceSlopePPM(depthFrame, "result-slope.ppm");
+    if (shouldOutputInteractionPPM) {
+        this->writeDepthPixelColorsToPPM(pixelColors, interactionPPMFilename);
+        delete[] pixelColors;
+    }
 
     return interaction;
 }
 
-Interaction *PhysicalManager::detectInteraction(std::string depthFrameFilename) {
-    libfreenect2::Frame *depthFrame = readDepthFrameFromFile(depthFrameFilename);
-    Interaction *interaction = detectInteraction(depthFrame);
+Interaction *PhysicalManager::detectInteraction(std::string depthFrameFilename, std::string interactionPPMFilename) {
+    libfreenect2::Frame *depthFrame = this->readDepthFrameFromFile(depthFrameFilename);
+    Interaction *interaction = this->detectInteraction(depthFrame, interactionPPMFilename);
     free(depthFrame->data);
     delete depthFrame;
     return interaction;
