@@ -6,7 +6,7 @@
 #ifndef INTERACTION_H
 #define INTERACTION_H
 
-#include <ctime>
+#include <cstdint>
 
 #include "Location.h"
 
@@ -14,20 +14,22 @@ namespace virtualMonitor {
 
 // Source: https://developer.apple.com/documentation/uikit/uigesturerecognizer
 enum InteractionType {
-    InteractionTypeTap,
-    InteractionTypePinch,
-    InteractionTypeRotation,
-    InteractionTypeSwipe,
-    InteractionTypePan,
-    InteractionTypeEdgePan,
-    InteractionTypeLongPress
+    Tap,
+    Pinch,
+    Rotation,
+    Swipe,
+    Pan,
+    EdgePan,
+    LongPress
 };
 
 struct Interaction {
     InteractionType type;
-    std::time_t time;
+    uint32_t time;
     Coord3D *physicalLocation;
     Coord2D *virtualLocation;
+    float surfaceRegressionA;
+    float surfaceRegressionB;
 };
 
 } /* namespace virtualMonitor */

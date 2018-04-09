@@ -18,6 +18,9 @@ class PhysicalManager {
     private:
         libfreenect2::Frame *referenceFrame;
         float *surfaceRegression;
+        float surfaceRegressionEqA;
+        float surfaceRegressionEqB;
+
     public:
         PhysicalManager();
         virtual ~PhysicalManager();

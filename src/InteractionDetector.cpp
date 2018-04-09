@@ -41,7 +41,7 @@ int InteractionDetector::start(bool displayViewer) {
     return 0;
 }
 
-Interaction *InteractionDetector::detectInteraction(bool outputPPMData) {
+Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
     KinectReaderFrames *frames = this->reader->readFrames();
     if (frames == NULL) {
         std::cout << "Virtual Monitor: Could not read frames." << std::endl;
@@ -49,10 +49,22 @@ Interaction *InteractionDetector::detectInteraction(bool outputPPMData) {
     }
 
     std::string interactionPPMFilename = "";
-    if (outputPPMData) {
+    if (shouldOutputPPMData) {
         interactionPPMFilename = INTERACTION_PPM_FILENAME;
     }
+
+    // Call VirtualManager to check for an interaction (with physical coordinates)
     Interaction *interaction = this->physicalManager->detectInteraction(frames->depth, interactionPPMFilename);
+    if (interaction != NULL) {
+        // TODO Call VirtualManager to get virtual coordinates
+        return interaction;
+    }
+
+    if (shouldOutputPPMData) {
+        this->physicalManager->writeDepthFrameToPPM(frames->depth, DEPTH_PPM_FILENAME);
+        this->physicalManager->writeDepthFrameToSurfaceDepthPPM(frames->depth, SURFACEDEPTH_PPM_FILENAME);
+        this->physicalManager->writeDepthFrameToSurfaceSlopePPM(frames->depth, SURFACESLOPE_PPM_FILENAME);
+    }
 
     if (this->displayViewer) {
         this->viewer->addFrame(VIEWER_FRAME_COLOR, frames->color);
@@ -61,19 +73,13 @@ Interaction *InteractionDetector::detectInteraction(bool outputPPMData) {
         this->viewer->addFrame(VIEWER_FRAME_REGISTERED, frames->colorDepthRegistered);
         bool shouldStop = this->viewer->render();
         if (shouldStop) {
-            return NULL;
+            // TODO stop detecting interactions because the viewer has been quit
+            // This is only a bug for debugging using the viewer
         }
     }
 
-    if (outputPPMData) {
-        this->physicalManager->writeDepthFrameToPPM(frames->depth, DEPTH_PPM_FILENAME);
-        this->physicalManager->writeDepthFrameToSurfaceDepthPPM(frames->depth, SURFACEDEPTH_PPM_FILENAME);
-        this->physicalManager->writeDepthFrameToSurfaceSlopePPM(frames->depth, SURFACESLOPE_PPM_FILENAME);
-    }
-
     this->reader->releaseFrames(frames);
-
-    return interaction;
+    return NULL;
 }
 
 int InteractionDetector::stop() {
@@ -81,17 +87,21 @@ int InteractionDetector::stop() {
     return 0;
 }
 
-Interaction *InteractionDetector::testDetectInteraction(bool outputPPMData) {
+Interaction *InteractionDetector::testDetectInteraction(bool shouldOutputPPMData) {
     std::string interactionPPMFilename = "";
-    if (outputPPMData) {
+    if (shouldOutputPPMData) {
         interactionPPMFilename = INTERACTION_PPM_FILENAME;
     }
 
     std::string depthFrameFilename = "inputs/interaction2.bin";
     libfreenect2::Frame *depthFrame = this->physicalManager->readDepthFrameFromFile(depthFrameFilename);
     Interaction *interaction = this->physicalManager->detectInteraction(depthFrame, interactionPPMFilename);
+    if (interaction != NULL) {
+        // TODO Call VirtualManager to get virtual coordinates
+        return interaction;
+    }
     
-    if (outputPPMData) {
+    if (shouldOutputPPMData) {
         this->physicalManager->writeDepthFrameToPPM(depthFrame, DEPTH_PPM_FILENAME);
         this->physicalManager->writeDepthFrameToSurfaceDepthPPM(depthFrame, SURFACEDEPTH_PPM_FILENAME);
         this->physicalManager->writeDepthFrameToSurfaceSlopePPM(depthFrame, SURFACESLOPE_PPM_FILENAME);
@@ -99,7 +109,22 @@ Interaction *InteractionDetector::testDetectInteraction(bool outputPPMData) {
 
     free(depthFrame->data);
     delete depthFrame;
-    return interaction;
+    return NULL;
+}
+
+int InteractionDetector::freeInteraction(Interaction *interaction) {
+    if (interaction->physicalLocation != NULL) {
+        delete interaction->physicalLocation;
+        interaction->physicalLocation = NULL;
+    }
+
+    if (interaction->virtualLocation != NULL) {
+        delete interaction->virtualLocation;
+        interaction->virtualLocation = NULL;
+    }
+
+    delete interaction;
+    return 0;
 }
 
 } /* namespace virtualMonitor */
