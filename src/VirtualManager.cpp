@@ -51,12 +51,14 @@ double VirtualManager::findArcLength(float A_f, float B_f, int y1, int y2) {
 /* sets private vars for size and position of screen in physical coordinates
  * inputs: A and B for power regression, 
            bottom y-value and top y-value of screen */
-void VirtualManager::setScreenPhysical(float A_f, float B_f, int yBottom, int yTop) {
+void VirtualManager::setScreenPhysical(float A_f, float B_f, int xBottom, int yBottom, int xTop, int yTop) {
     this->screenLength_d = findArcLength(A_f, B_f, yBottom, yTop);
     this->A_f = A_f;
     this->B_f = B_f;
     this->yBottom = yBottom;
     this->yTop = yTop;
+    this->xTop = xTop;
+    this->xBottom = xBottom;
 }
 
 /* sets private vars for size of screen in virtual coordinates */
@@ -74,9 +76,28 @@ void VirtualManager::setVirtualCoord(Interaction *interaction) {
         return;
     }
 
+    // set y-coordinate of virtual location
     double interactionHeight_d = findArcLength(this->A_f, this->B_f, yBottom, interaction->physicalLocation->y);
     double percentageHeight_d = interactionHeight_d / this->screenLength_d;
     interaction->virtualLocation->y = (int)(((double)screenHeightVirtual) * percentageHeight_d);
+
+    // set x-coordinate of virtual location
+    // xLeft_d and xRight_d are the physical x-coordinates of the edge of the screen at height y
+    double xLeft_d = xLeftCurve(interaction->physicalLocation->y);
+    double xRight_d = xRightCurve(interaction->physicalLocation->y);
+    double x_d = (double)(interaction->physicalLocation->x);
+    double percentRight = (x_d - xLeft_d) / (xRight_d - xLeft_d);
+    interaction->virtualLocation->x = (int)((double)(this->screenWidthVirtual) * percentRight);
+}
+
+/* returns the physical x-coordinate of the left edge of the screen at height y */
+double VirtualManager::xLeftCurve(int y) {
+    return 0.0; // TODO write this
+}
+
+/* returns the physical x-coordinate of the right edge of the screen at height y */
+double VirtualManager::xRightCurve(int y) {
+    return 0.0; // TODO write this
 }
 
 }
