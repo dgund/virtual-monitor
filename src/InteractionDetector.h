@@ -27,6 +27,7 @@ class InteractionDetector {
     private:
         KinectReader *reader;
         PhysicalManager *physicalManager;
+        KinectReaderFrames *referenceFrames;
         Viewer *viewer;
         bool displayViewer;
 };

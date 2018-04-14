@@ -18,6 +18,7 @@ namespace virtualMonitor {
 InteractionDetector::InteractionDetector() {
     this->reader = new KinectReader();
     this->physicalManager = new PhysicalManager();
+    this->referenceFrames = NULL;
     this->viewer = new Viewer();
 }
 
@@ -38,6 +39,15 @@ int InteractionDetector::start(bool displayViewer) {
         std::cout << "Interaction Detector: Could not start reader." << std::endl;
         return -1;
     }
+
+    // Take a snapshot from the Kinect and set that as the reference frame
+    this->referenceFrames = this->reader->readFrames();
+    if (this->referenceFrames == NULL) {
+        std::cout << "Virtual Monitor: Could not read reference frames." << std::endl;
+        return -1;
+    }
+    this->physicalManager->setReferenceFrame(this->referenceFrames->depth);
+
     return 0;
 }
 
@@ -55,9 +65,9 @@ Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
 
     // Call VirtualManager to check for an interaction (with physical coordinates)
     Interaction *interaction = this->physicalManager->detectInteraction(frames->depth, interactionPPMFilename);
+
     if (interaction != NULL) {
         // TODO Call VirtualManager to get virtual coordinates
-        return interaction;
     }
 
     if (shouldOutputPPMData) {
@@ -79,11 +89,15 @@ Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
     }
 
     this->reader->releaseFrames(frames);
-    return NULL;
+    return interaction;
 }
 
 int InteractionDetector::stop() {
     this->reader->stop();
+
+    // Free the reference frames set in this->start()
+    this->reader->releaseFrames(this->referenceFrames);
+
     return 0;
 }
 
@@ -96,11 +110,11 @@ Interaction *InteractionDetector::testDetectInteraction(bool shouldOutputPPMData
     std::string depthFrameFilename = "inputs/interaction2.bin";
     libfreenect2::Frame *depthFrame = this->physicalManager->readDepthFrameFromFile(depthFrameFilename);
     Interaction *interaction = this->physicalManager->detectInteraction(depthFrame, interactionPPMFilename);
+    
     if (interaction != NULL) {
         // TODO Call VirtualManager to get virtual coordinates
-        return interaction;
     }
-    
+
     if (shouldOutputPPMData) {
         this->physicalManager->writeDepthFrameToPPM(depthFrame, DEPTH_PPM_FILENAME);
         this->physicalManager->writeDepthFrameToSurfaceDepthPPM(depthFrame, SURFACEDEPTH_PPM_FILENAME);
@@ -109,21 +123,26 @@ Interaction *InteractionDetector::testDetectInteraction(bool shouldOutputPPMData
 
     free(depthFrame->data);
     delete depthFrame;
-    return NULL;
+
+    return interaction;
 }
 
 int InteractionDetector::freeInteraction(Interaction *interaction) {
-    if (interaction->physicalLocation != NULL) {
-        delete interaction->physicalLocation;
-        interaction->physicalLocation = NULL;
+    if (interaction != NULL) {
+        if (interaction->physicalLocation != NULL) {
+            delete interaction->physicalLocation;
+            interaction->physicalLocation = NULL;
+        }
+
+        if (interaction->virtualLocation != NULL) {
+            delete interaction->virtualLocation;
+            interaction->virtualLocation = NULL;
+        }
+
+        delete interaction;
+        interaction = NULL;
     }
 
-    if (interaction->virtualLocation != NULL) {
-        delete interaction->virtualLocation;
-        interaction->virtualLocation = NULL;
-    }
-
-    delete interaction;
     return 0;
 }
 

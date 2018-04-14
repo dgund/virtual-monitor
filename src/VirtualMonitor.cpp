@@ -46,7 +46,7 @@ void runInteractionDetection(InteractionDetectionSource source, bool shouldOutpu
     else {
         interactionDetector->start(shouldDisplayViewer);
         while (!global_shutdown) {
-            std::cout << "Virtual Monitor: Checking for interaction..." << std::endl;
+            std::cout << "Virtual Monitor: Reading frame and checking for interaction..." << std::endl;
             interaction = interactionDetector->detectInteraction(shouldOutputPPMData);
             if (interaction != NULL) {
                 interactionDetected(interaction);

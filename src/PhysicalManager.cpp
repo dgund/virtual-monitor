@@ -35,16 +35,22 @@ namespace virtualMonitor {
 PhysicalManager::PhysicalManager() {
     this->referenceFrame = NULL;
     this->surfaceRegression = new float[DEPTH_FRAME_WIDTH * DEPTH_FRAME_HEIGHT];
+    this->surfaceLeftXForY = new int[DEPTH_FRAME_HEIGHT];
+    this->surfaceRightXForY = new int[DEPTH_FRAME_HEIGHT];
 }
 
 PhysicalManager::~PhysicalManager() {
     delete this->surfaceRegression;
+    delete[] this->surfaceLeftXForY;
+    delete[] this->surfaceRightXForY;
+    // Expect this->referenceFrame to be freed externally
 }
 
 int PhysicalManager::setReferenceFrame(libfreenect2::Frame *referenceFrame) {
     this->referenceFrame = referenceFrame;
     if (this->referenceFrame != NULL) {
         this->updateSurfaceRegressionForReference();
+        this->updateSurfaceBoundsForReference();
     }
     return 0;
 }
@@ -66,42 +72,11 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame,
         pixelColors = new std::string[depthFrame->width * depthFrame->height];
     }
 
-    int *surfaceLeftXForY = new int[depthFrame->height];
-    int *surfaceRightXForY = new int[depthFrame->height];
-
-    for (int y = depthFrame->height - 1; 0 <= y; y--) {
-        // Determine left and right bounds of the surface
-        surfaceLeftXForY[y] = depthFrame->width;
-        surfaceRightXForY[y] = -1;
-        for (int x = 0; x < depthFrame->width; x++) {
-            bool isSurface = true;
-            int delta = 1;
-            for (int movingY = y - delta; movingY <= y + delta; movingY++) {
-                if (0 <= movingY && movingY < depthFrame->height) {
-                    for (int movingX = x - delta; movingX <= x + delta; movingX++) {
-                        if (0 <= movingX && movingX < depthFrame->width) {
-                            if (!this->isPixelOnSurface(depthFrame, movingX, movingY, 2)) {
-                                isSurface = false;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (isSurface) {
-                if (surfaceLeftXForY[y] >= depthFrame->width) {
-                    surfaceLeftXForY[y] = x;
-                }
-                surfaceRightXForY[y] = x;
-            }
-        }
-    }
-
     // Search for the interaction point, starting from the bottom-right of the depth frame and moving right and up
     Interaction *interaction = NULL;
     for (int y = depthFrame->height - 1; 0 <= y; y--) {
         for (int x = 0; x < depthFrame->width; x++) {
-            bool isWithinSurfaceBounds = (surfaceLeftXForY[y] < depthFrame->width && surfaceLeftXForY[y] <= x && x <= surfaceRightXForY[y]);
+            bool isWithinSurfaceBounds = (this->surfaceLeftXForY[y] < depthFrame->width && this->surfaceLeftXForY[y] <= x && x <= this->surfaceRightXForY[y]);
             if (!isWithinSurfaceBounds) {
                 if (shouldOutputInteractionPPM) {
                     pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = "0 0 255"; // blue
@@ -122,10 +97,10 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame,
                 bool isPixelAnomaly = !this->isPixelOnSurface(depthFrame, x, y, 2);
                 if (isPixelAnomaly) {
                     // Edge test: If the pixel is not on the edge of the surface
-                    bool isPixelOnSurfaceEdge = this->isPixelOnSurfaceEdge(depthFrame, x, y, surfaceLeftXForY, surfaceRightXForY);
+                    bool isPixelOnSurfaceEdge = this->isPixelOnSurfaceEdge(depthFrame, x, y);
                     if (!isPixelOnSurfaceEdge) {
                         // Size test: If the pixel is significantly large
-                        bool isAnomalySignificant = this->isAnomalySizeAtLeast(depthFrame, x, y, surfaceLeftXForY, surfaceRightXForY, 700, 2);
+                        bool isAnomalySignificant = this->isAnomalySizeAtLeast(depthFrame, x, y, 700, 2);
                         if (isAnomalySignificant) {
                             std::cout << "Potential interaction point is (" << x << ", " << y << ")" << std::endl;
                             pixelColor = "0 0 0"; // black
@@ -145,6 +120,11 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame,
                                 interaction->virtualLocation = new Coord2D();
                                 interaction->surfaceRegressionA = this->surfaceRegressionEqA;
                                 interaction->surfaceRegressionB = this->surfaceRegressionEqB;
+
+                                // If no need to output the full interaction PPM, return now
+                                if (!shouldOutputInteractionPPM) {
+                                    return interaction;
+                                }
                             }
                         }
                     }
@@ -155,9 +135,6 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame,
             }
         }
     }
-
-    delete[] surfaceLeftXForY;
-    delete[] surfaceRightXForY;
     
     if (shouldOutputInteractionPPM) {
         this->writeDepthPixelColorsToPPM(pixelColors, interactionPPMFilename);
@@ -229,18 +206,18 @@ bool PhysicalManager::isPixelOnSurface(libfreenect2::Frame *depthFrame, int x, i
     return depthSimilarToSurface && slopeSimilarToSurface;
 }
 
-bool PhysicalManager::isPixelOnSurfaceEdge(libfreenect2::Frame *depthFrame, int x, int y, int *surfaceLeftXForY, int *surfaceRightXForY) {
-    return (y+1 > depthFrame->height    || // Pixel is bottom of frame
-            surfaceLeftXForY[y+1] >= x  || // No surface below pixel
-            surfaceRightXForY[y+1] <= x ||
-            surfaceLeftXForY[y] >= x    || // No surface left of pixel
-            surfaceRightXForY[y] <= x   || // No surface right of pixel
-            y-1 < 0                     || // Pixel is top of frame
-            surfaceLeftXForY[y-1] >= x  || // No surface above pixel
-            surfaceRightXForY[y-1] <= x);
+bool PhysicalManager::isPixelOnSurfaceEdge(libfreenect2::Frame *depthFrame, int x, int y) {
+    return (y+1 > depthFrame->height          || // Pixel is bottom of frame
+            this->surfaceLeftXForY[y+1] >= x  || // No surface below pixel
+            this->surfaceRightXForY[y+1] <= x ||
+            this->surfaceLeftXForY[y] >= x    || // No surface left of pixel
+            this->surfaceRightXForY[y] <= x   || // No surface right of pixel
+            y-1 < 0                           || // Pixel is top of frame
+            this->surfaceLeftXForY[y-1] >= x  || // No surface above pixel
+            this->surfaceRightXForY[y-1] <= x);
 }
 
-bool PhysicalManager::isAnomalySizeAtLeast(libfreenect2::Frame *depthFrame, int x, int y, int *surfaceLeftXForY, int *surfaceRightXForY, int minSize, int delta) {
+bool PhysicalManager::isAnomalySizeAtLeast(libfreenect2::Frame *depthFrame, int x, int y, int minSize, int delta) {
     int count = 0;
 
     if (this->isPixelOnSurface(depthFrame, x, y, delta)) {
@@ -274,7 +251,7 @@ bool PhysicalManager::isAnomalySizeAtLeast(libfreenect2::Frame *depthFrame, int 
                     if (movingX >= 0 && movingX < depthFrame->width) {
                         // If the neighboring point is also a disturbance, add it to the queue to check
                         bool neighborIsAnomaly = !this->isPixelOnSurface(depthFrame, movingX, movingY, delta);
-                        bool neighborIsOnSurfaceEdge = this->isPixelOnSurfaceEdge(depthFrame, movingX, movingY, surfaceLeftXForY, surfaceRightXForY);
+                        bool neighborIsOnSurfaceEdge = this->isPixelOnSurfaceEdge(depthFrame, movingX, movingY);
                         int neighborIndex = DEPTH_FRAME_2D_TO_1D(movingX,movingY);
                         bool neighborHasNotBeenChecked = (coordsChecked.find(neighborIndex) == coordsChecked.end());
                         if (neighborIsAnomaly && !neighborIsOnSurfaceEdge && neighborHasNotBeenChecked) {
@@ -290,13 +267,15 @@ bool PhysicalManager::isAnomalySizeAtLeast(libfreenect2::Frame *depthFrame, int 
 }
 
 int PhysicalManager::updateSurfaceRegressionForReference() {
+    libfreenect2::Frame *depthFrame = this->referenceFrame;
+
     // x reference is the center of the frame
-    int surfaceCenterX = this->referenceFrame->width / 2;
+    int surfaceCenterX = depthFrame->width / 2;
 
     // y reference is the bottom of the surface
     int surfaceBottomY;
-    for (surfaceBottomY = this->referenceFrame->height - 1; surfaceBottomY > 0; surfaceBottomY--) {
-        float depth = pixelDepth(this->referenceFrame, surfaceCenterX, surfaceBottomY);
+    for (surfaceBottomY = depthFrame->height - 1; surfaceBottomY > 0; surfaceBottomY--) {
+        float depth = this->pixelDepth(depthFrame, surfaceCenterX, surfaceBottomY);
         if (DEPTH_MIN < depth && depth < DEPTH_MAX) {
             break;
         }
@@ -309,24 +288,57 @@ int PhysicalManager::updateSurfaceRegressionForReference() {
     float depthRefs[REGRESSION_N];
     for (int i = 0; i < REGRESSION_N; i++) {
         yRefs[i] = (float)(surfaceBottomY - i);
-        depthRefs[i] = this->pixelDepth(this->referenceFrame, surfaceCenterX, yRefs[i]);
+        depthRefs[i] = this->pixelDepth(depthFrame, surfaceCenterX, yRefs[i]);
     }
 
     // Compute power regression parameters A and B
     float A = 0;
     float B = 0;
     this->powerRegression(yRefs, depthRefs, REGRESSION_N, &A, &B);
+    this->surfaceRegressionEqA = A;
+    this->surfaceRegressionEqB = B;
 
     // Compute surfaceRegression depths
-    for (int y = 0; y < this->referenceFrame->height; y++) {
+    for (int y = 0; y < depthFrame->height; y++) {
         float expectedSurfaceDepth = (A) * std::pow(y, B);
-        for (int x = 0; x < this->referenceFrame->width; x++) {
+        for (int x = 0; x < depthFrame->width; x++) {
             this->surfaceRegression[DEPTH_FRAME_2D_TO_1D(x,y)] = expectedSurfaceDepth;
         }
     }
 
-    this->surfaceRegressionEqA = A;
-    this->surfaceRegressionEqB = B;
+    return 0;
+}
+
+int PhysicalManager::updateSurfaceBoundsForReference() {
+    libfreenect2::Frame *depthFrame = this->referenceFrame;
+
+    for (int y = depthFrame->height - 1; 0 <= y; y--) {
+        // Determine left and right bounds of the surface
+        this->surfaceLeftXForY[y] = depthFrame->width;
+        this->surfaceRightXForY[y] = -1;
+        for (int x = 0; x < depthFrame->width; x++) {
+            bool isSurface = true;
+            int delta = 1;
+            for (int movingY = y - delta; movingY <= y + delta; movingY++) {
+                if (0 <= movingY && movingY < depthFrame->height) {
+                    for (int movingX = x - delta; movingX <= x + delta; movingX++) {
+                        if (0 <= movingX && movingX < depthFrame->width) {
+                            if (!this->isPixelOnSurface(depthFrame, movingX, movingY, 2)) {
+                                isSurface = false;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (isSurface) {
+                if (this->surfaceLeftXForY[y] >= depthFrame->width) {
+                    this->surfaceLeftXForY[y] = x;
+                }
+                this->surfaceRightXForY[y] = x;
+            }
+        }
+    }
 
     return 0;
 }

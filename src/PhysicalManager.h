@@ -20,6 +20,8 @@ class PhysicalManager {
         float *surfaceRegression;
         float surfaceRegressionEqA;
         float surfaceRegressionEqB;
+        int *surfaceLeftXForY;
+        int *surfaceRightXForY;
 
     public:
         PhysicalManager();
@@ -42,11 +44,13 @@ class PhysicalManager {
         virtual float pixelDepth(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
         virtual float pixelSurfaceRegression(int x, int y);
         virtual bool isPixelOnSurface(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
-        virtual bool isPixelOnSurfaceEdge(libfreenect2::Frame *depthFrame, int x, int y, int *surfaceLeftXForY, int *surfaceRightXForY);
+        virtual bool isPixelOnSurfaceEdge(libfreenect2::Frame *depthFrame, int x, int y);
 
-        virtual bool isAnomalySizeAtLeast(libfreenect2::Frame *depthFrame, int x, int y, int *surfaceLeftXForY, int *surfaceRightXForY, int minSize, int delta);
+        virtual bool isAnomalySizeAtLeast(libfreenect2::Frame *depthFrame, int x, int y, int minSize, int delta);
 
         virtual int updateSurfaceRegressionForReference();
+        virtual int updateSurfaceBoundsForReference();
+
         virtual int findVariance(libfreenect2::Frame *depthFrame, int x, int y, int boxSize);
         virtual int powerRegression(float *x, float *y, int n, float *a, float *b);
 };
