@@ -41,12 +41,15 @@ class PhysicalManager {
         virtual int writeDepthPixelColorsToPPM(std::string pixelColors[], std::string ppmFilename);
 
     private:
+        virtual bool isPixelAnomaly(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
+        virtual bool isPixelAnomalyEdge(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
+        virtual bool isAnomalySizeAtLeast(libfreenect2::Frame *depthFrame, int x, int y, int minSize, int delta=0);
+
         virtual float pixelDepth(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
         virtual float pixelSurfaceRegression(int x, int y);
         virtual bool isPixelOnSurface(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
+        virtual bool isPixelOnReference(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
         virtual bool isPixelOnSurfaceEdge(libfreenect2::Frame *depthFrame, int x, int y);
-
-        virtual bool isAnomalySizeAtLeast(libfreenect2::Frame *depthFrame, int x, int y, int minSize, int delta);
 
         virtual int updateSurfaceRegressionForReference();
         virtual int updateSurfaceBoundsForReference();
