@@ -180,7 +180,8 @@ bool PhysicalManager::isPixelAnomaly(libfreenect2::Frame *depthFrame, int x, int
 }
 
 bool PhysicalManager::isPixelAnomalyEdge(libfreenect2::Frame *depthFrame, int x, int y, int delta) {
-    for (int movingY = y - 1; movingY <= y + 1; movingY++) {
+    // PIxel anomaly edge if a neighboring point to the side or below is not an anomaly
+    for (int movingY = y; movingY <= y + 1; movingY++) {
         if (0 <= movingY && movingY < depthFrame->height) {
             for (int movingX = x - 1; movingX <= x + 1; movingX++) {
                 if (0 <= movingX && movingX < depthFrame->width) {

@@ -112,7 +112,7 @@ Interaction *InteractionDetector::testDetectInteraction(bool shouldOutputPPMData
     std::cout << "InteractionDetector: Setting test reference frame..." << std::endl;
     this->physicalManager->setReferenceFrame(referenceFrame);
 
-    std::string depthFrameFilename = "inputs/interaction2.bin";
+    std::string depthFrameFilename = "inputs/nointeraction1.bin";
     libfreenect2::Frame *depthFrame = this->physicalManager->readDepthFrameFromFile(depthFrameFilename);
     std::cout << "InteractionDetector: Detecting test interaction..." << std::endl;
     Interaction *interaction = this->physicalManager->detectInteraction(depthFrame, interactionPPMFilename);
