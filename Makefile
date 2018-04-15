@@ -1,6 +1,6 @@
 CC = g++ -std=c++11
 LD = g++ -std=c++11
-CFLAGS = -g -Wall
+CFLAGS = -g -Wall -O2
 TARGET = VirtualMonitor
 
 LIBFREENECT = -L/usr/local/lib -lfreenect2 -lglfw
