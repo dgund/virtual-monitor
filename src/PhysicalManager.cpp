@@ -28,9 +28,23 @@ namespace virtualMonitor {
 #define DEPTH_MIN 500
 #define DEPTH_MAX 9000
 
-#define REGRESSION_N 100
+#define DEPTH_SMOOTHING_DELTA 2
 
-#define THRESHOLD_VARIANCE 3000
+#define REGRESSION_N 100
+#define VARIANCE_BOX_SIDE_LENGTH 20
+
+#define INTERACTION_SURFACE_DEPTH_DIFFERENCE_MAX 200
+#define INTERACTION_SURFACE_SLOPE_DIFFERENCE_MAX 5
+#define INTERACTION_REFERENCE_DEPTH_DIFFERENCE_MAX 10
+#define INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MAX 5
+
+#define INTERACTION_ANOMALY_SIZE_MIN 700
+#define INTERACTION_VARIANCE_MAX 3000
+
+#define PIXEL_DEFAULT "0 0 0"
+#define PIXEL_SURFACE "255 0 0"
+#define PIXEL_ANOMALY "0 255 0"
+#define PIXEL_INTERACTION "0 0 255"
 
 PhysicalManager::PhysicalManager() {
     this->referenceFrame = NULL;
@@ -72,7 +86,7 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame,
         pixelColors = new std::string[depthFrame->width * depthFrame->height];
         for (int y = 0; y < depthFrame->height; y++) {
             for (int x = 0; x < depthFrame->width; x++) {
-                pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = "0 0 0"; // black
+                pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = PIXEL_DEFAULT;
             }
         }
     }
@@ -85,13 +99,13 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame,
         for (int x = surfaceLeftX; x < depthFrame->width && x < surfaceRightX; x++) {
 
             float pixelDepth = this->pixelDepth(depthFrame, x, y);
-            bool isPixelAnomaly = this->isPixelAnomaly(depthFrame, x, y, 2);
+            bool isPixelAnomaly = this->isPixelAnomaly(depthFrame, x, y, DEPTH_SMOOTHING_DELTA);
 
-            std::string pixelColor = "0 0 0"; // black
+            std::string pixelColor = PIXEL_DEFAULT;
             if (isPixelAnomaly) {
-                pixelColor = "0 255 0"; // green
+                pixelColor = PIXEL_ANOMALY;
             } else {
-                pixelColor = "255 0 0"; // red
+                pixelColor = PIXEL_SURFACE;
             }
 
             // If an interaction point has not already been found, check this pixel for an interaction
@@ -99,18 +113,18 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame,
                 // Anomaly test: If the pixel depth differs significantly from the surface and reference
                 if (isPixelAnomaly) {
                     // Anomaly edge test: If the pixel is on the edge of the anomaly (where the interaction would be)
-                    bool isPixelAnomalyEdge = this->isPixelAnomalyEdge(depthFrame, x, y, 2);
+                    bool isPixelAnomalyEdge = this->isPixelAnomalyEdge(depthFrame, x, y, DEPTH_SMOOTHING_DELTA);
                     if (isPixelAnomalyEdge) {
                         // Size test: If the anomaly is significantly large
-                        bool isAnomalySignificant = this->isAnomalySizeAtLeast(depthFrame, x, y, 700, 2);
+                        bool isAnomalySignificant = this->isAnomalySizeAtLeast(depthFrame, x, y, INTERACTION_ANOMALY_SIZE_MIN, DEPTH_SMOOTHING_DELTA);
                         if (isAnomalySignificant) {
                             std::cout << "Potential interaction point is (" << x << ", " << y << ")" << std::endl;
-                            pixelColor = "0 0 255"; // blue
+                            pixelColor = PIXEL_INTERACTION; // blue
 
                             // Variance test: If the variance around the pixel is small enough for it to be near the surface
-                            float variance = this->depthVariance(depthFrame, x, y, 20);
+                            float variance = this->depthVariance(depthFrame, x, y, VARIANCE_BOX_SIDE_LENGTH);
                             std::cout << "Variance: " << variance << "\n";
-                            if (variance < THRESHOLD_VARIANCE) {
+                            if (variance <= INTERACTION_VARIANCE_MAX) {
                                 // Pixel is confirmed a point of interaction with the surface
                                 interaction = new Interaction();
                                 interaction->type = InteractionType::Tap;
@@ -274,10 +288,10 @@ bool PhysicalManager::isPixelOnSurface(libfreenect2::Frame *depthFrame, int x, i
 
     // Checks if depth is within 200 mm of expected surface depth
     // This is not very agressive to avoid dealing with Kinect innaccuracies
-    bool depthSimilarToSurface = std::abs(depth - surfaceDepth) < 200.0;
+    bool depthSimilarToSurface = std::abs(depth - surfaceDepth) < INTERACTION_SURFACE_DEPTH_DIFFERENCE_MAX;
 
     // Checks if the change in depth to an adjacent point is within 5 mm of the expected surface change
-    bool slopeSimilarToSurface = std::abs(depthChange - surfaceDepthChange) < 5.0;
+    bool slopeSimilarToSurface = std::abs(depthChange - surfaceDepthChange) < INTERACTION_SURFACE_SLOPE_DIFFERENCE_MAX;
 
     return depthSimilarToSurface && slopeSimilarToSurface;
 }
@@ -295,10 +309,10 @@ bool PhysicalManager::isPixelOnReference(libfreenect2::Frame *depthFrame, int x,
     float referenceDepthChange = referenceDepth - referenceDepthNext;
 
     // Checks if depth is within 10 mm of reference depth
-    bool depthSimilarToReference = std::abs(depth - referenceDepth) < 10.0;
+    bool depthSimilarToReference = std::abs(depth - referenceDepth) < INTERACTION_REFERENCE_DEPTH_DIFFERENCE_MAX;
 
     // Checks if the change in depth to an adjacent point is within 5 mm of the reference change
-    bool slopeSimilarToReference = std::abs(depthChange - referenceDepthChange) < 5.0;
+    bool slopeSimilarToReference = std::abs(depthChange - referenceDepthChange) < INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MAX;
 
     return depthSimilarToReference && slopeSimilarToReference;
 }
@@ -379,7 +393,7 @@ int PhysicalManager::updateSurfaceBoundsForReference() {
                 if (0 <= movingY && movingY < depthFrame->height) {
                     for (int movingX = x - delta; movingX <= x + delta; movingX++) {
                         if (0 <= movingX && movingX < depthFrame->width) {
-                            if (!this->isPixelOnSurface(depthFrame, movingX, movingY, 2)) {
+                            if (!this->isPixelOnSurface(depthFrame, movingX, movingY, DEPTH_SMOOTHING_DELTA)) {
                                 isSurface = false;
                             }
                         }
@@ -515,7 +529,7 @@ int PhysicalManager::writeDepthFrameToSurfaceDepthPPM(libfreenect2::Frame *depth
             float surfaceDepth = this->pixelSurfaceRegression(x, y);
             float depthDifference = std::abs(depth - surfaceDepth);
             
-            std::string pixelColor = "0 0 0"; // black
+            std::string pixelColor = PIXEL_DEFAULT;
             if (DEPTH_MIN < depth && depth < DEPTH_MAX) {
                 pixelColor = "100 0 0"; // dark red
             }
@@ -560,22 +574,22 @@ int PhysicalManager::writeDepthFrameToSurfaceSlopePPM(libfreenect2::Frame *depth
             int yNext = y - 1;
             if (y == 0) yNext = y + 1;
 
-            float depth = this->pixelDepth(depthFrame, x, y, 2);
-            float depthNext = this->pixelDepth(depthFrame, x, yNext, 2);
+            float depth = this->pixelDepth(depthFrame, x, y, DEPTH_SMOOTHING_DELTA);
+            float depthNext = this->pixelDepth(depthFrame, x, yNext, DEPTH_SMOOTHING_DELTA);
             float depthChange = depth - depthNext;
 
             float surfaceDepth = this->pixelSurfaceRegression(x, y);
             float surfaceDepthNext = this->pixelSurfaceRegression(x, yNext);
             float surfaceDepthChange = surfaceDepth - surfaceDepthNext;
 
-            std::string pixelColor = "0 0 0"; // black
+            std::string pixelColor = PIXEL_DEFAULT;
 
             if (DEPTH_MIN < depth && depth < DEPTH_MAX) {
-                pixelColor = "0 255 0"; // green
+                pixelColor = PIXEL_ANOMALY;
             }
 
-            if (std::abs(depthChange - surfaceDepthChange) < 5.0) {
-                pixelColor = "255 0 0"; // red
+            if (std::abs(depthChange - surfaceDepthChange) < INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MAX) {
+                pixelColor = PIXEL_SURFACE;
             }
             
             pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = pixelColor;
