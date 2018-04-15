@@ -108,7 +108,7 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame,
                             pixelColor = "0 0 255"; // blue
 
                             // Variance test: If the variance around the pixel is small enough for it to be near the surface
-                            float variance = this->findVariance(depthFrame, x, y, 20);
+                            float variance = this->depthVariance(depthFrame, x, y, 20);
                             std::cout << "Variance: " << variance << "\n";
                             if (variance < THRESHOLD_VARIANCE) {
                                 // Pixel is confirmed a point of interaction with the surface
@@ -399,41 +399,39 @@ int PhysicalManager::updateSurfaceBoundsForReference() {
     return 0;
 }
 
-int PhysicalManager::findVariance(libfreenect2::Frame *depthFrame, int x, int y, int boxSize) {
+float PhysicalManager::depthVariance(libfreenect2::Frame *depthFrame, int x, int y, int boxSideLength) {
 
 	// variance = E[X^2] - E[X]^2, ie (mean of squared data) - (mean of data)^2
 
-	int centerPointDepth = this->pixelDepth(depthFrame, x, y);
-
-	// for each pixel in box around point,
-	// compute sum of depths, and sum of depths square
-	int lowerBound = (boxSize / 2);
-	int upperBound = ((boxSize - 1) / 2);
-	int sumDepths = 0;
-	int sumSquareDepths = 0;
-	int depth = 0;
+	int lowerBound = (boxSideLength / 2);
+	int upperBound = ((boxSideLength - 1) / 2);
+	long sumDepths = 0;
+	long sumSquareDepths = 0;
 	for (int movingY = y - lowerBound; movingY <= y + upperBound; movingY++) {
+        int surfaceLeftX = this->surfaceLeftXForY[movingY];
+        int surfaceRightX = this->surfaceRightXForY[movingY];
 		for (int movingX = x - lowerBound; movingX <= x + upperBound; movingX++) {
-			// check that (movingX, movingY) is valid coordinate
-			if (movingY >= 0 && movingY < depthFrame->height && movingX >= 0 && movingX < depthFrame->width) {
-				// if valid coordinate, use pixel depth for computation
-				depth = this->pixelDepth(depthFrame, movingX, movingY);
+            bool isPixelInFrame = movingY >= 0 && movingY < depthFrame->height && movingX >= 0 && movingX < depthFrame->width;
+            bool isPixelInSurfaceBounds = surfaceLeftX <= movingX &&
+             movingX <= surfaceRightX;
+			if (isPixelInFrame && isPixelInSurfaceBounds) {
+				// Sum pixel depths in box
+                // Approximate depth float as long to make addition faster
+				long depth = this->pixelDepth(depthFrame, movingX, movingY);
 				sumDepths += depth;
 				sumSquareDepths += (depth * depth);
 			}
 			else {
-				// if not valid coordinate, use original point's depth for computation
-				// (to minimize variance, because this probably isn't an interaction)
-				sumDepths += centerPointDepth;
-				sumSquareDepths += (centerPointDepth * centerPointDepth);
+				// If the pixel is outside of the frame and/or surface, use depth 0 (aka add nothing to sum) in order to create large variance, as this is likely not an interaction
 			}
 		}
 	}
 
-	float boxSize_f = (float)(boxSize);
-	float meanDepths_f = ((float)sumDepths) / (boxSize_f * boxSize_f);
-	float meanSquareDepths_f = ((float)sumSquareDepths) / (boxSize_f * boxSize_f);
-	return meanSquareDepths_f - (meanDepths_f * meanDepths_f);    
+	float boxSideLength_f = (float)(boxSideLength);
+	float meanDepths_f = ((float)sumDepths) / (boxSideLength_f * boxSideLength_f);
+	float meanSquareDepths_f = ((float)sumSquareDepths) / (boxSideLength_f * boxSideLength_f);
+    float variance = meanSquareDepths_f - (meanDepths_f * meanDepths_f);
+	return variance;
 }
 
 int PhysicalManager::powerRegression(float *x, float *y, int n, float *a, float *b) {

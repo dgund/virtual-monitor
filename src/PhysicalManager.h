@@ -54,7 +54,7 @@ class PhysicalManager {
         virtual int updateSurfaceRegressionForReference();
         virtual int updateSurfaceBoundsForReference();
 
-        virtual int findVariance(libfreenect2::Frame *depthFrame, int x, int y, int boxSize);
+        virtual float depthVariance(libfreenect2::Frame *depthFrame, int x, int y, int boxSideLength);
         virtual int powerRegression(float *x, float *y, int n, float *a, float *b);
 };
 
