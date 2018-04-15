@@ -33,10 +33,10 @@ namespace virtualMonitor {
 #define REGRESSION_N 100
 #define VARIANCE_BOX_SIDE_LENGTH 20
 
-#define INTERACTION_SURFACE_DEPTH_DIFFERENCE_MAX 200
-#define INTERACTION_SURFACE_SLOPE_DIFFERENCE_MAX 5
-#define INTERACTION_REFERENCE_DEPTH_DIFFERENCE_MAX 10
-#define INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MAX 5
+#define INTERACTION_SURFACE_DEPTH_DIFFERENCE_MIN 200
+#define INTERACTION_SURFACE_SLOPE_DIFFERENCE_MIN 5
+#define INTERACTION_REFERENCE_DEPTH_DIFFERENCE_MIN 10
+#define INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MIN 5
 
 #define INTERACTION_ANOMALY_SIZE_MIN 700
 #define INTERACTION_VARIANCE_MAX 3000
@@ -295,10 +295,10 @@ bool PhysicalManager::isPixelOnSurface(libfreenect2::Frame *depthFrame, int x, i
 
     // Checks if depth is within 200 mm of expected surface depth
     // This is not very agressive to avoid dealing with Kinect innaccuracies
-    bool depthSimilarToSurface = std::abs(depth - surfaceDepth) < INTERACTION_SURFACE_DEPTH_DIFFERENCE_MAX;
+    bool depthSimilarToSurface = std::abs(depth - surfaceDepth) < INTERACTION_SURFACE_DEPTH_DIFFERENCE_MIN;
 
     // Checks if the change in depth to an adjacent point is within 5 mm of the expected surface change
-    bool slopeSimilarToSurface = std::abs(depthChange - surfaceDepthChange) < INTERACTION_SURFACE_SLOPE_DIFFERENCE_MAX;
+    bool slopeSimilarToSurface = std::abs(depthChange - surfaceDepthChange) < INTERACTION_SURFACE_SLOPE_DIFFERENCE_MIN;
 
     return depthSimilarToSurface && slopeSimilarToSurface;
 }
@@ -316,10 +316,10 @@ bool PhysicalManager::isPixelOnReference(libfreenect2::Frame *depthFrame, int x,
     float referenceDepthChange = referenceDepth - referenceDepthNext;
 
     // Checks if depth is within 10 mm of reference depth
-    bool depthSimilarToReference = std::abs(depth - referenceDepth) < INTERACTION_REFERENCE_DEPTH_DIFFERENCE_MAX;
+    bool depthSimilarToReference = std::abs(depth - referenceDepth) < INTERACTION_REFERENCE_DEPTH_DIFFERENCE_MIN;
 
     // Checks if the change in depth to an adjacent point is within 5 mm of the reference change
-    bool slopeSimilarToReference = std::abs(depthChange - referenceDepthChange) < INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MAX;
+    bool slopeSimilarToReference = std::abs(depthChange - referenceDepthChange) < INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MIN;
 
     return depthSimilarToReference && slopeSimilarToReference;
 }
@@ -595,7 +595,7 @@ int PhysicalManager::writeDepthFrameToSurfaceSlopePPM(libfreenect2::Frame *depth
                 pixelColor = PIXEL_ANOMALY;
             }
 
-            if (std::abs(depthChange - surfaceDepthChange) < INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MAX) {
+            if (std::abs(depthChange - surfaceDepthChange) < INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MIN) {
                 pixelColor = PIXEL_SURFACE;
             }
             
