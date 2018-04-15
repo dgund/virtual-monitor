@@ -119,13 +119,13 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame,
                         bool isAnomalySignificant = this->isAnomalySizeAtLeast(depthFrame, x, y, INTERACTION_ANOMALY_SIZE_MIN, DEPTH_SMOOTHING_DELTA);
                         if (isAnomalySignificant) {
                             std::cout << "Potential interaction point is (" << x << ", " << y << ")" << std::endl;
-                            pixelColor = PIXEL_INTERACTION; // blue
-
+                            pixelColor = PIXEL_INTERACTION;
                             // Variance test: If the variance around the pixel is small enough for it to be near the surface
                             float variance = this->depthVariance(depthFrame, x, y, VARIANCE_BOX_SIDE_LENGTH);
+                            bool isAnomalyNearSurface = variance <= INTERACTION_VARIANCE_MAX;
                             std::cout << "Variance: " << variance << "\n";
-                            if (variance <= INTERACTION_VARIANCE_MAX) {
-                                // Pixel is confirmed a point of interaction with the surface
+                            if (isAnomalyNearSurface) {
+                                // Pixel is confirmed a significant point of interaction with the surface
                                 interaction = new Interaction();
                                 interaction->type = InteractionType::Tap;
                                 interaction->time = depthFrame->timestamp;
