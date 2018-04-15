@@ -279,6 +279,13 @@ bool PhysicalManager::isPixelOnSurface(libfreenect2::Frame *depthFrame, int x, i
     if (y == 0) yNext = y + 1;
     
     float depth = this->pixelDepth(depthFrame, x, y, delta);
+
+    // If the depth is outside of the valid min and max, return false
+    bool depthValid = DEPTH_MIN <= depth && depth <= DEPTH_MAX;
+    if (!depthValid) {
+        return false;
+    }
+
     float depthNext = this->pixelDepth(depthFrame, x, yNext, delta);
     float depthChange = depth - depthNext;
 
