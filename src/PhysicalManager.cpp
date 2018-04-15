@@ -31,12 +31,12 @@ namespace virtualMonitor {
 #define DEPTH_SMOOTHING_DELTA 2
 
 #define REGRESSION_N 100
-#define VARIANCE_BOX_SIDE_LENGTH 20
+#define VARIANCE_BOX_SIDE_LENGTH 15
 
 #define INTERACTION_SURFACE_DEPTH_DIFFERENCE_MIN 200
-#define INTERACTION_SURFACE_SLOPE_DIFFERENCE_MIN 7
+#define INTERACTION_SURFACE_SLOPE_DIFFERENCE_MIN 5
 #define INTERACTION_REFERENCE_DEPTH_DIFFERENCE_MIN 100
-#define INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MIN 7
+#define INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MIN 5
 
 #define INTERACTION_ANOMALY_SIZE_MIN 700
 #define INTERACTION_VARIANCE_MAX 3000
@@ -115,17 +115,16 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame,
                     // Anomaly edge test: If the pixel is on the edge of the anomaly (where the interaction would be)
                     bool isPixelAnomalyEdge = this->isPixelAnomalyEdge(depthFrame, x, y, DEPTH_SMOOTHING_DELTA);
                     if (isPixelAnomalyEdge) {
-                        // Size test: If the anomaly is significantly large
-                        bool isAnomalySignificant = this->isAnomalySizeAtLeast(depthFrame, x, y, INTERACTION_ANOMALY_SIZE_MIN, DEPTH_SMOOTHING_DELTA);
-                        if (isAnomalySignificant) {
-                            std::cout << "Potential interaction point is (" << x << ", " << y << ")" << std::endl;
+                        // Variance test: If the variance around the pixel is small enough for it to be near the surface
+                        float variance = this->depthVariance(depthFrame, x, y, VARIANCE_BOX_SIDE_LENGTH);
+                        bool isAnomalyNearSurface = variance <= INTERACTION_VARIANCE_MAX;
+                        if (isAnomalyNearSurface) {
                             pixelColor = PIXEL_INTERACTION;
-                            // Variance test: If the variance around the pixel is small enough for it to be near the surface
-                            float variance = this->depthVariance(depthFrame, x, y, VARIANCE_BOX_SIDE_LENGTH);
-                            bool isAnomalyNearSurface = variance <= INTERACTION_VARIANCE_MAX;
-                            std::cout << "Variance: " << variance << "\n";
-                            if (isAnomalyNearSurface) {
+                            // Size test: If the anomaly is significantly large
+                            bool isAnomalySignificant = this->isAnomalySizeAtLeast(depthFrame, x, y, INTERACTION_ANOMALY_SIZE_MIN, DEPTH_SMOOTHING_DELTA);
+                            if (isAnomalySignificant) {
                                 // Pixel is confirmed a significant point of interaction with the surface
+                                std::cout << "Interaction variance: " << variance << "\n";
                                 interaction = new Interaction();
                                 interaction->type = InteractionType::Tap;
                                 interaction->time = depthFrame->timestamp;
