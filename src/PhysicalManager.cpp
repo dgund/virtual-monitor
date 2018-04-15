@@ -34,9 +34,9 @@ namespace virtualMonitor {
 #define VARIANCE_BOX_SIDE_LENGTH 20
 
 #define INTERACTION_SURFACE_DEPTH_DIFFERENCE_MIN 200
-#define INTERACTION_SURFACE_SLOPE_DIFFERENCE_MIN 5
-#define INTERACTION_REFERENCE_DEPTH_DIFFERENCE_MIN 10
-#define INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MIN 5
+#define INTERACTION_SURFACE_SLOPE_DIFFERENCE_MIN 7
+#define INTERACTION_REFERENCE_DEPTH_DIFFERENCE_MIN 100
+#define INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MIN 7
 
 #define INTERACTION_ANOMALY_SIZE_MIN 700
 #define INTERACTION_VARIANCE_MAX 3000
@@ -395,7 +395,7 @@ int PhysicalManager::updateSurfaceBoundsForReference() {
         this->surfaceRightXForY[y] = -1;
         for (int x = 0; x < depthFrame->width; x++) {
             bool isSurface = true;
-            int delta = 1;
+            int delta = DEPTH_SMOOTHING_DELTA;
             for (int movingY = y - delta; movingY <= y + delta; movingY++) {
                 if (0 <= movingY && movingY < depthFrame->height) {
                     for (int movingX = x - delta; movingX <= x + delta; movingX++) {
