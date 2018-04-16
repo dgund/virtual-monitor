@@ -13,8 +13,10 @@ VirtualManager::VirtualManager() {
     this->screenLength_d = 0.0;
     this->A_f = 0.0;
     this->B_f = 0.0;
-    this->yBottom = 0;
-    this->yTop = 0;
+    this->bottomRight = {0, 0, 0};
+    this->topRight = {0, 0, 0};
+    this->bottomLeft = {0, 0, 0};
+    this->topLeft = {0, 0, 0};
 }
 
 VirtualManager::~VirtualManager() {
@@ -50,15 +52,15 @@ double VirtualManager::findArcLength(float A_f, float B_f, int y1, int y2) {
 
 /* sets private vars for size and position of screen in physical coordinates
  * inputs: A and B for power regression, 
-           bottom y-value and top y-value of screen */
-void VirtualManager::setScreenPhysical(float A_f, float B_f, int xBottom, int yBottom, int xTop, int yTop) {
-    this->screenLength_d = findArcLength(A_f, B_f, yBottom, yTop);
+           calibration points of screen */
+void VirtualManager::setScreenPhysical(float A_f, float B_f, Coord3D bottomRight, Coord3D bottomLeft, Coord3D topRight, Coord3D topLeft) {
+    this->screenLength_d = findArcLength(A_f, B_f, bottomRight.y, topRight.y);
     this->A_f = A_f;
     this->B_f = B_f;
-    this->yBottom = yBottom;
-    this->yTop = yTop;
-    this->xTop = xTop;
-    this->xBottom = xBottom;
+    this->bottomRight = bottomRight;
+    this->bottomLeft = bottomLeft;
+    this->topRight = topRight;
+    this->topLeft = topLeft;
 }
 
 /* sets private vars for size of screen in virtual coordinates */
@@ -77,7 +79,7 @@ void VirtualManager::setVirtualCoord(Interaction *interaction) {
     }
 
     // set y-coordinate of virtual location
-    double interactionHeight_d = findArcLength(this->A_f, this->B_f, yBottom, interaction->physicalLocation->y);
+    double interactionHeight_d = findArcLength(this->A_f, this->B_f, this->bottomRight.y, interaction->physicalLocation->y);
     double percentageHeight_d = interactionHeight_d / this->screenLength_d;
     interaction->virtualLocation->y = (int)(((double)screenHeightVirtual) * percentageHeight_d);
 
@@ -92,12 +94,28 @@ void VirtualManager::setVirtualCoord(Interaction *interaction) {
 
 /* returns the physical x-coordinate of the left edge of the screen at height y */
 double VirtualManager::xLeftCurve(int y) {
-    return 0.0; // TODO write this
+    double yBottom_d = (double)(this->bottomLeft.y);
+    double yTop_d = (double)(this->topLeft.y);
+    double xBottom_d = (double)(this->bottomLeft.x);
+    double xTop_d = (double)(this->topLeft.x);
+    double y_d = (double)(y);
+
+    // x = (y - y2) * ((x2 - x1)/(y2 - y1)) + x2
+    double slopeInverse_d = (xTop_d - xBottom_d) / (yTop_d - yBottom_d);
+    return (y_d - yTop_d) * slopeInverse_d + xTop_d;
 }
 
 /* returns the physical x-coordinate of the right edge of the screen at height y */
 double VirtualManager::xRightCurve(int y) {
-    return 0.0; // TODO write this
+    double yBottom_d = (double)(this->bottomRight.y);
+    double yTop_d = (double)(this->topRight.y);
+    double xBottom_d = (double)(this->bottomRight.x);
+    double xTop_d = (double)(this->topRight.x);
+    double y_d = (double)(y);
+
+    // x = (y - y2) * ((x2 - x1)/(y2 - y1)) + x2
+    double slopeInverse_d = (xTop_d - xBottom_d) / (yTop_d - yBottom_d);
+    return (y_d - yTop_d) * slopeInverse_d + xTop_d;
 }
 
 }

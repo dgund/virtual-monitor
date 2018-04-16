@@ -15,10 +15,10 @@ class VirtualManager {
         double screenLength_d;
         float A_f;
         float B_f;
-        int xBottom;
-        int yBottom;
-        int xTop;
-        int yTop;
+        Coord3D bottomRight;
+        Coord3D bottomLeft;
+        Coord3D topRight;
+        Coord3D topLeft;
         int screenHeightVirtual;
         int screenWidthVirtual;
 
@@ -28,7 +28,7 @@ class VirtualManager {
     
     private:
         virtual double findArcLength(float A_f, float B_f, int y1, int y2);
-        virtual void setScreenPhysical(float A_f, float B_f, int xBottom, int yBottom, int xTop, int yTop);
+        virtual void setScreenPhysical(float A_f, float B_f, Coord3D bottomRight, Coord3D topRight, Coord3D bottomLeft, Coord3D topLeft);
         virtual void setScreenVirtual(int screenHeightVirtual, int screenWidthVirtual);
         virtual void setVirtualCoord(Interaction *interaction);
         virtual double xLeftCurve(int y);
