@@ -12,13 +12,13 @@
 #undef VIRTUALMONITOR_OUTPUT_VIEWER
 
 // Uncomment to use test inputs instead of the live Kinect
-#define VIRTUALMONITOR_TEST_INPUTS
+//#define VIRTUALMONITOR_TEST_INPUTS
 
 // Uncomment to use a single Kinect snapshot instead of the live Kinect
 //#define VIRTUALMONITOR_TEST_SNAPSHOT
 
 // Uncomment to output depth data in depth, surface-depth, surface-slope, and interaction PPMs
-#define VIRTUALMONITOR_OUTPUT_PPM
+//#define VIRTUALMONITOR_OUTPUT_PPM
 
 // Uncomment to enable the Viewer to display live Kinect data
 //#define VIRTUALMONITOR_OUTPUT_VIEWER

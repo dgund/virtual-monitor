@@ -52,7 +52,6 @@ void runInteractionDetection(InteractionDetectionSource source, bool shouldOutpu
                 interactionDetected(interaction);
                 interactionDetector->freeInteraction(interaction);
             }
-            interactionDetector->stop();
 
             // For KinectSnapshot, stop after one snapshot
             if (source == InteractionDetectionSource::KinectSnapshot) {
@@ -60,6 +59,7 @@ void runInteractionDetection(InteractionDetectionSource source, bool shouldOutpu
             }
         }
 
+        interactionDetector->stop();
     }
 
     delete interactionDetector;
