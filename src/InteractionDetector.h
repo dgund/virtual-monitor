@@ -10,6 +10,7 @@
 #include "Interaction.h"
 #include "PhysicalManager.h"
 #include "Viewer.h"
+#include "VirtualManager.h"
 
 namespace virtualMonitor {
 
@@ -30,6 +31,7 @@ class InteractionDetector {
         KinectReaderFrames *referenceFrames;
         Viewer *viewer;
         bool displayViewer;
+        VirtualManager *virtualManager;
 };
 
 } /* namespace virtualMonitor */

@@ -25,12 +25,12 @@ class VirtualManager {
     public: 
         VirtualManager();
         virtual ~VirtualManager();
+        virtual void setScreenPhysical(Coord3D bottomRight, Coord3D topRight, Coord3D bottomLeft, Coord3D topLeft);
+        virtual void setScreenVirtual(int screenHeightVirtual, int screenWidthVirtual);
+        virtual void setVirtualCoord(Interaction *interaction);
     
     private:
         virtual double findArcLength(float A_f, float B_f, int y1, int y2);
-        virtual void setScreenPhysical(float A_f, float B_f, Coord3D bottomRight, Coord3D topRight, Coord3D bottomLeft, Coord3D topLeft);
-        virtual void setScreenVirtual(int screenHeightVirtual, int screenWidthVirtual);
-        virtual void setVirtualCoord(Interaction *interaction);
         virtual double xLeftCurve(int y);
         virtual double xRightCurve(int y);
 };

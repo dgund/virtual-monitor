@@ -5,6 +5,7 @@
 
 #include "VirtualManager.h"
 
+#include <iostream>
 #include <math.h>
 
 namespace virtualMonitor {
@@ -53,10 +54,7 @@ double VirtualManager::findArcLength(float A_f, float B_f, int y1, int y2) {
 /* sets private vars for size and position of screen in physical coordinates
  * inputs: A and B for power regression, 
            calibration points of screen */
-void VirtualManager::setScreenPhysical(float A_f, float B_f, Coord3D bottomRight, Coord3D bottomLeft, Coord3D topRight, Coord3D topLeft) {
-    this->screenLength_d = findArcLength(A_f, B_f, bottomRight.y, topRight.y);
-    this->A_f = A_f;
-    this->B_f = B_f;
+void VirtualManager::setScreenPhysical(Coord3D bottomRight, Coord3D bottomLeft, Coord3D topRight, Coord3D topLeft) {
     this->bottomRight = bottomRight;
     this->bottomLeft = bottomLeft;
     this->topRight = topRight;
@@ -73,9 +71,19 @@ void VirtualManager::setScreenVirtual(int screenHeightVirtual, int screenWidthVi
    virtual coordinate */
 void VirtualManager::setVirtualCoord(Interaction *interaction) {
     // make sure VirtualManager private vars have been initialized
-    if (this->A_f == 0.0 || screenHeightVirtual == 0) {
-        // TODO print error
+    if (this->bottomRight.y == 0 || this->screenHeightVirtual == 0) {
+        // TODO print error or check more values?
+        std::cout << "setVirtualCoord() called before initial values have been set\n";
         return;
+    }
+
+    // if A and B have changed, reset those values and recalculate physical screen height
+    if (this->A_f != interaction->surfaceRegressionA ||
+        this->B_f != interaction->surfaceRegressionB) {
+        
+        this->A_f = interaction->surfaceRegressionA;
+        this->B_f = interaction->surfaceRegressionB;
+        this->screenLength_d = findArcLength(this->A_f, this->B_f, this->bottomRight.y, this->topRight.y);
     }
 
     // set y-coordinate of virtual location

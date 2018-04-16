@@ -20,12 +20,14 @@ InteractionDetector::InteractionDetector() {
     this->physicalManager = new PhysicalManager();
     this->referenceFrames = NULL;
     this->viewer = new Viewer();
+    this->virtualManager = new VirtualManager();
 }
 
 InteractionDetector::~InteractionDetector() {
     delete this->reader;
     delete this->physicalManager;
     delete this->viewer;
+    delete this->virtualManager;
 }
 
 int InteractionDetector::start(bool displayViewer) {
@@ -68,6 +70,7 @@ Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
 
     if (interaction != NULL) {
         // TODO Call VirtualManager to get virtual coordinates
+        this->virtualManager->setVirtualCoord(interaction);
     }
 
     if (shouldOutputPPMData) {
@@ -119,6 +122,7 @@ Interaction *InteractionDetector::testDetectInteraction(bool shouldOutputPPMData
     
     if (interaction != NULL) {
         // TODO Call VirtualManager to get virtual coordinates
+        this->virtualManager->setVirtualCoord(interaction);
     }
 
     if (shouldOutputPPMData) {
