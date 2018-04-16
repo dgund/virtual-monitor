@@ -53,6 +53,13 @@ int InteractionDetector::start(bool displayViewer) {
     return 0;
 }
 
+// TODO get rid away 
+static int counter = 0;
+static Coord3D bottomRight;
+static Coord3D topRight;
+static Coord3D bottomLeft;
+static Coord3D topLeft;
+
 Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
     KinectReaderFrames *frames = this->reader->readFrames();
     if (frames == NULL) {
@@ -68,9 +75,43 @@ Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
     // Call VirtualManager to check for an interaction (with physical coordinates)
     Interaction *interaction = this->physicalManager->detectInteraction(frames->depth, interactionPPMFilename);
 
+    // TODO get rid of this
+    switch (counter) {
+        case 0: {
+            topLeft = *(interaction->physicalLocation);
+            counter++;
+            break;
+        }
+        case 1: {
+            topRight = *(interaction->physicalLocation);
+            counter++;
+            break;
+        }
+        case 2: {
+            bottomLeft = *(interaction->physicalLocation);
+            counter++;
+            break;
+        }
+        case 3: {
+            bottomRight = *(interaction->physicalLocation);
+            this->virtualManager->setScreenPhysical(bottomRight, topRight, bottomLeft, topLeft);
+            this->virtualManager->setScreenVirtual(100, 100);
+            counter++;
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+
     if (interaction != NULL) {
         // TODO Call VirtualManager to get virtual coordinates
-        this->virtualManager->setVirtualCoord(interaction);
+        // TODO get rid of if statement
+        if (counter > 3) {
+            this->virtualManager->setVirtualCoord(interaction);
+            Coord2D vcoord = *(interaction->virtualLocation);
+            std::cout << "VIRTUAL COORDINATE: (" << vcoord.x << ", " << vcoord.y << ")\n";
+        }
     }
 
     if (shouldOutputPPMData) {
