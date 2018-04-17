@@ -5,96 +5,143 @@
 
 #include "VirtualMonitor.h"
 
-#include <signal.h>
-#include <cstdlib>
 #include <iostream>
 
 #include "InteractionDetector.h"
+#include "InteractionHandler.h"
+
+#define LABEL_START_DETECTION "Start Detection"
+#define LABEL_STOP_DETECTION "Stop Detection"
+#define LABEL_CALIBRATE "Calibrate"
 
 using namespace virtualMonitor;
 
-enum InteractionDetectionSource {
-    KinectContinuous,
-    KinectSnapshot,
-    TestInput
+// VirtualMonitorApp
+
+wxIMPLEMENT_APP(VirtualMonitorApp);
+
+bool VirtualMonitorApp::OnInit() {
+    VirtualMonitorFrame *frame = new VirtualMonitorFrame();
+    frame->Show(true);
+    return true;
+}
+
+// VirtualMonitorFrame
+
+enum {
+    ID_DETECT = 1,
+    ID_CALIBRATE = 2
 };
 
-// Signal handlers
-bool global_shutdown;
-void sigintHandler(int s) {
-    global_shutdown = true;
+wxBEGIN_EVENT_TABLE(VirtualMonitorFrame, wxFrame)
+    EVT_MENU(ID_DETECT, VirtualMonitorFrame::OnDetect)
+    EVT_MENU(ID_CALIBRATE, VirtualMonitorFrame::OnCalibrate)
+    EVT_MENU(wxID_EXIT, VirtualMonitorFrame::OnExit)
+wxEND_EVENT_TABLE()
+
+VirtualMonitorFrame::VirtualMonitorFrame() : wxFrame(NULL, wxID_ANY, wxT("Virtual Monitor"), wxDefaultPosition, wxSize(180, 120)) {
+    this->state = VirtualMonitorState::Paused;
+
+    this->panel = new wxPanel(this, wxID_ANY);
+    this->panel->Show(true);
+
+    this->detectButton = new wxButton(this->panel, ID_DETECT, wxT(LABEL_START_DETECTION), wxPoint(10, 10));
+    Connect(ID_DETECT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(VirtualMonitorFrame::OnDetect));
+    this->detectButton->Show(true);
+
+    this->calibrateButton = new wxButton(this->panel, ID_CALIBRATE, wxT(LABEL_CALIBRATE), wxPoint(10, 40));
+    Connect(ID_CALIBRATE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(VirtualMonitorFrame::OnCalibrate));
+    this->calibrateButton->Show(true);
+
+    this->textLabel = new wxStaticText(this->panel, 0, wxT("Text"), wxPoint(10, 70));
+    this->textLabel->Show(true);
+
+    panel->Fit();
 }
 
-void runInteractionDetection(InteractionDetectionSource source, bool shouldOutputPPMData, bool shouldDisplayViewer);
-void interactionDetected(Interaction *interaction);
+VirtualMonitorFrame::~VirtualMonitorFrame() {
+    delete this->textLabel;
+    delete this->calibrateButton;
+    delete this->detectButton;
+    delete this->panel;
+}
 
-void runInteractionDetection(InteractionDetectionSource source, bool shouldOutputPPMData, bool shouldDisplayViewer) {
-    InteractionDetector *interactionDetector = new InteractionDetector();
-    Interaction *interaction;
-
-    // For TestInput, run a test interaction detection
-    if (source == InteractionDetectionSource::TestInput) {
-        std::cout << "Virtual Monitor: Checking for test interaction..." << std::endl;
-        interaction = interactionDetector->testDetectInteraction(shouldOutputPPMData);
-        if (interaction != NULL) {
-            interactionDetected(interaction);
-            interactionDetector->freeInteraction(interaction);
-        }
+void VirtualMonitorFrame::OnDetect(wxCommandEvent& event) {
+    switch (this->state) {
+    case VirtualMonitorState::Calibrating:
+        return;
+    case VirtualMonitorState::Detecting:
+        // Stop detection
+        this->stopDetection();
+        this->state = VirtualMonitorState::Paused;
+        break;
+    case VirtualMonitorState::Paused:
+        // Start detecting
+        this->startDetection();
+        this->state = VirtualMonitorState::Detecting;
+        break;
     }
 
-    // For KinectContinuous or KinectSnapshot, start the detector and detect interactions
-    else {
-        interactionDetector->start(shouldDisplayViewer);
-        while (!global_shutdown) {
-            std::cout << "Virtual Monitor: Reading frame and checking for interaction..." << std::endl;
-            interaction = interactionDetector->detectInteraction(shouldOutputPPMData);
-            if (interaction != NULL) {
-                interactionDetected(interaction);
-                interactionDetector->freeInteraction(interaction);
-            }
+    this->detectButton->SetLabel(this->state == VirtualMonitorState::Detecting ? LABEL_STOP_DETECTION : LABEL_START_DETECTION);
+}
 
-            // For KinectSnapshot, stop after one snapshot
-            if (source == InteractionDetectionSource::KinectSnapshot) {
-                global_shutdown = true;
-            }
-        }
-
-        interactionDetector->stop();
+void VirtualMonitorFrame::OnCalibrate(wxCommandEvent& event) {
+    switch (this->state) {
+    case VirtualMonitorState::Calibrating:
+        // Already calibrating
+        return;
+    case VirtualMonitorState::Detecting:
+        // Stop detection
+        this->stopDetection();
+        this->state = VirtualMonitorState::Paused;
+        // continue
+    case VirtualMonitorState::Paused:
+        // Start calibration
+        this->state = VirtualMonitorState::Calibrating;
+        break;
     }
-
-    delete interactionDetector;
 }
 
-void interactionDetected(Interaction *interaction) {
-    std::cout << "Virtual Monitor: Interaction detected at x = " << interaction->physicalLocation->x << ", y = " << interaction->physicalLocation->y << ", depth = " << interaction->physicalLocation->z << std::endl;
+void VirtualMonitorFrame::OnExit(wxCommandEvent& event) {
+    Close(true);
 }
 
-// Main
-int main(int argc, char *argv[]) {
-    global_shutdown = false;
-    signal(SIGINT, sigintHandler);
-
-    // Determine interaction detection source from #defines in VirtualMonitor.h
-    InteractionDetectionSource source = InteractionDetectionSource::KinectContinuous;
-#ifdef VIRTUALMONITOR_TEST_SNAPSHOT
-    source = InteractionDetectionSource::KinectSnapshot;
-#elif defined VIRTUALMONITOR_TEST_INPUTS
-    source = InteractionDetectionSource::TestInput;
-#endif
-
-    // Determine if should output PPM data for the interaction detection from #defines in VirtualMonitor.h
-    bool shouldOutputPPMData = false;
-#ifdef VIRTUALMONITOR_OUTPUT_PPM
-    shouldOutputPPMData = true;
-#endif
-
-    // Determine if should display live Kinect viewer from #defines in VirtualMonitor.h
-    bool shouldDisplayViewer = false;
-#ifdef VIRTUALMONITOR_OUTPUT_VIEWER
-    shouldDisplayViewer = true;
-#endif
-
-    runInteractionDetection(source, shouldOutputPPMData, shouldDisplayViewer);
-
+int VirtualMonitorFrame::startDetection() {
+    // Reset cancellation token
+    this->detectionShouldCancel = false;
+    // Start interaction detection/handling on new thread
+    this->detectionThread = std::thread(&VirtualMonitorFrame::detectionThreadFn, this);
     return 0;
+}
+
+int VirtualMonitorFrame::stopDetection() {
+    this->detectionShouldCancel = true;
+    this->detectionThread.join();
+    return 0;
+}
+
+void VirtualMonitorFrame::detectionThreadFn() {
+    InteractionDetector *detector = new InteractionDetector();
+    InteractionHandler *handler = new InteractionHandler();
+
+    // TODO set calibration
+
+    detector->start();
+
+    // Run until cancellation token
+    while (!this->detectionShouldCancel) {
+        // Detect interaction
+        Interaction *interaction = detector->detectInteraction();
+        if (interaction != NULL) {
+            // Handle interaction
+            handler->handleInteraction(interaction);
+            // Free interaction
+            detector->freeInteraction(interaction);
+        }
+    }
+
+    detector->stop();
+
+    delete detector;
+    delete handler;
 }

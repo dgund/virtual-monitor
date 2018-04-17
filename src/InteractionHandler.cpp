@@ -19,6 +19,7 @@ InteractionHandler::~InteractionHandler() {
 }
 
 int InteractionHandler::handleInteraction(Interaction *interaction) {
+    std::cout << "InteractionHandler: Interaction at x = " << interaction->physicalLocation->x << ", y = " << interaction->physicalLocation->y << ", depth = " << interaction->physicalLocation->z << std::endl;
     return 0;
 }
 

@@ -1,9 +1,15 @@
 CC = g++ -std=c++11
 LD = g++ -std=c++11
-CFLAGS = -g -Wall -O2
+
+CXXFLAGS += -g -Wall -O2
+LDFLAGS += -lpthread
+
 TARGET = VirtualMonitor
 
 LIBFREENECT = -L/usr/local/lib -lfreenect2 -lglfw
+
+LIBWX_CXXFLAGS = `wx-config --cxxflags`
+LIBWX_LDFLAGS = `wx-config --libs`
 
 ifeq ($(shell uname -s), Darwin)
 	LIBGL = -framework OpenGL -framework GLUT
@@ -11,7 +17,8 @@ else
 	LIBGL = -lGL -lglut
 endif
 
-LDFLAGS += $(LIBFREENECT) $(LIBGL)
+CXXFLAGS += $(LIBWX_CXXFLAGS)
+LDFLAGS += $(LIBFREENECT) $(LIBGL) $(LIBWX_LDFLAGS)
 
 BIN_DIR = ./bin
 BUILD_DIR = ./build
@@ -24,7 +31,7 @@ mkdir_if_necessary = @mkdir -p $(@D)
 
 all: $(BIN_DIR)/$(TARGET)
 
-debug: CFLAGS += -DDEBUG
+debug: CXXFLAGS += -DDEBUG
 debug: $(BIN_DIR)/$(TARGET)
 
 $(BIN_DIR)/$(TARGET): $(OBJ_LIST)
@@ -33,7 +40,7 @@ $(BIN_DIR)/$(TARGET): $(OBJ_LIST)
 
 $(OBJ_LIST): $(BUILD_DIR)/%.o : $(SRC_DIR)/%.cpp
 	$(mkdir_if_necessary)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CXXFLAGS) -c $< -o $@
 
 .PHONY: clean
 clean:
