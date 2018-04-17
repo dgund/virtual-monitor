@@ -60,6 +60,11 @@ VirtualMonitorFrame::VirtualMonitorFrame() : wxFrame(NULL, wxID_ANY, wxT("Virtua
 }
 
 VirtualMonitorFrame::~VirtualMonitorFrame() {
+    // Stop detection thread if running
+    if (this->state == VirtualMonitorState::Detecting) {
+        this->stopDetection();
+    }
+
     delete this->textLabel;
     delete this->calibrateButton;
     delete this->detectButton;
@@ -124,9 +129,22 @@ void VirtualMonitorFrame::detectionThreadFn() {
     InteractionDetector *detector = new InteractionDetector();
     InteractionHandler *handler = new InteractionHandler();
 
+#ifdef VIRTUALMONITOR_TEST_INPUTS
+    Interaction *interaction = detector->testDetectInteraction(true);
+    if (interaction != NULL) {
+        // Handle interaction
+        handler->handleInteraction(interaction);
+        // Free interaction
+        detector->freeInteraction(interaction);
+    }
+#else
     // TODO set calibration
 
-    detector->start();
+    if (detector->start() < 0) {
+        delete detector;
+        delete handler;
+        return;
+    }
 
     // Run until cancellation token
     while (!this->detectionShouldCancel) {
@@ -138,9 +156,13 @@ void VirtualMonitorFrame::detectionThreadFn() {
             // Free interaction
             detector->freeInteraction(interaction);
         }
+#ifdef VIRTUALMONITOR_TEST_SNAPSHOT
+        break;
+#endif
     }
 
     detector->stop();
+#endif
 
     delete detector;
     delete handler;
