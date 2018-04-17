@@ -79,21 +79,25 @@ Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
     switch (counter) {
         case 0: {
             topLeft = *(interaction->physicalLocation);
+            std::cout << "topLeft set: (" << topLeft.x << ", " << topLeft.y << ")\n";
             counter++;
             break;
         }
         case 1: {
             topRight = *(interaction->physicalLocation);
+            std::cout << "topRight set: (" << topRight.x << ", " << topRight.y << ")\n";
             counter++;
             break;
         }
         case 2: {
             bottomLeft = *(interaction->physicalLocation);
+            std::cout << "bottomLeft set: (" << bottomLeft.x << ", " << bottomLeft.y << ")\n";
             counter++;
             break;
         }
         case 3: {
             bottomRight = *(interaction->physicalLocation);
+            std::cout << "bottomRight set: (" << bottomRight.x << ", " << bottomRight.y << ")\n";
             this->virtualManager->setScreenPhysical(bottomRight, topRight, bottomLeft, topLeft);
             this->virtualManager->setScreenVirtual(100, 100);
             counter++;
