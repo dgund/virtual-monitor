@@ -9,7 +9,6 @@
 #include "KinectReader.h"
 #include "Interaction.h"
 #include "PhysicalManager.h"
-#include "Viewer.h"
 
 namespace virtualMonitor {
 
@@ -18,7 +17,7 @@ class InteractionDetector {
         InteractionDetector();
         virtual ~InteractionDetector();
 
-        virtual int start(bool displayViewer=false);
+        virtual int start();
         virtual Interaction *detectInteraction(bool shouldOutputPPMData=false);
         virtual int stop();
         virtual Interaction *testDetectInteraction(bool shouldOutputPPMData=false);
@@ -28,8 +27,6 @@ class InteractionDetector {
         KinectReader *reader;
         PhysicalManager *physicalManager;
         libfreenect2::Frame *referenceDepthFrame;
-        Viewer *viewer;
-        bool displayViewer;
 };
 
 } /* namespace virtualMonitor */

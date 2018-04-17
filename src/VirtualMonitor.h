@@ -13,16 +13,12 @@
 
 #undef VIRTUALMONITOR_TEST_INPUTS
 #undef VIRTUALMONITOR_TEST_SNAPSHOT
-#undef VIRTUALMONITOR_OUTPUT_VIEWER
 
 // Uncomment to use test inputs instead of the live Kinect and output interaction data
 //#define VIRTUALMONITOR_TEST_INPUTS
 
 // Uncomment to use a single Kinect snapshot instead of the live Kinect
 //#define VIRTUALMONITOR_TEST_SNAPSHOT
-
-// Uncomment to enable the Viewer to display live Kinect data
-//#define VIRTUALMONITOR_OUTPUT_VIEWER
 
 enum VirtualMonitorState {
     Paused,

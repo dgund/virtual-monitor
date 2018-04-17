@@ -19,22 +19,14 @@ InteractionDetector::InteractionDetector() {
     this->reader = new KinectReader();
     this->physicalManager = new PhysicalManager();
     this->referenceDepthFrame = NULL;
-    this->viewer = new Viewer();
 }
 
 InteractionDetector::~InteractionDetector() {
     delete this->reader;
     delete this->physicalManager;
-    delete this->viewer;
 }
 
-int InteractionDetector::start(bool displayViewer) {
-    this->displayViewer = displayViewer;
-
-    if (this->displayViewer) {
-        this->viewer->initialize();
-    }
-
+int InteractionDetector::start() {
     if (this->reader->start() < 0) {
         std::cout << "InteractionDetector: Could not start reader." << std::endl;
         return -1;
@@ -81,18 +73,6 @@ Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
         this->physicalManager->writeDepthFrameToPPM(frames->depth, DEPTH_PPM_FILENAME);
         this->physicalManager->writeDepthFrameToSurfaceDepthPPM(frames->depth, SURFACEDEPTH_PPM_FILENAME);
         this->physicalManager->writeDepthFrameToSurfaceSlopePPM(frames->depth, SURFACESLOPE_PPM_FILENAME);
-    }
-
-    if (this->displayViewer) {
-        this->viewer->addFrame(VIEWER_FRAME_COLOR, frames->color);
-        this->viewer->addFrame(VIEWER_FRAME_INFRARED, frames->infrared);
-        this->viewer->addFrame(VIEWER_FRAME_DEPTH, frames->depth);
-        this->viewer->addFrame(VIEWER_FRAME_REGISTERED, frames->colorDepthRegistered);
-        bool shouldStop = this->viewer->render();
-        if (shouldStop) {
-            // TODO stop detecting interactions because the viewer has been quit
-            // This is only a bug for debugging using the viewer
-        }
     }
 
     if (frames->depth == this->physicalManager->getReferenceFrame()) {
