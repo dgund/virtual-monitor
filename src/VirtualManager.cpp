@@ -48,7 +48,8 @@ double VirtualManager::findArcLength(float A_f, float B_f, int y1, int y2) {
         len_d += sqrt(1.0 + zDistSqr_d);
     }
 
-    return len_d;
+    // return abs(len_d)
+    return (len_d < 0.0) ? (-1.0 * len_d) : len_d;
 }
 
 /* sets private vars for size and position of screen in physical coordinates
@@ -96,7 +97,7 @@ void VirtualManager::setVirtualCoord(Interaction *interaction) {
     double xLeft_d = xLeftCurve(interaction->physicalLocation->y);
     double xRight_d = xRightCurve(interaction->physicalLocation->y);
     double x_d = (double)(interaction->physicalLocation->x);
-    double percentRight = (x_d - xLeft_d) / (xRight_d - xLeft_d);
+    double percentRight = (xLeft_d - x_d) / (xLeft_d - xRight_d);
     interaction->virtualLocation->x = (int)((double)(this->screenWidthVirtual) * percentRight);
 }
 
