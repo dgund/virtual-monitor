@@ -18,7 +18,7 @@ namespace virtualMonitor {
 InteractionDetector::InteractionDetector() {
     this->reader = new KinectReader();
     this->physicalManager = new PhysicalManager();
-    this->referenceFrames = NULL;
+    this->referenceDepthFrame = NULL;
     this->viewer = new Viewer();
     this->virtualManager = new VirtualManager();
     this->virtualManager->setScreenVirtual(100, 100);
@@ -40,17 +40,24 @@ int InteractionDetector::start(bool displayViewer) {
     }
 
     if (this->reader->start() < 0) {
-        std::cout << "Interaction Detector: Could not start reader." << std::endl;
+        std::cout << "InteractionDetector: Could not start reader." << std::endl;
         return -1;
     }
 
-    // Take a snapshot from the Kinect and set that as the reference frame
-    this->referenceFrames = this->reader->readFrames();
-    if (this->referenceFrames == NULL) {
-        std::cout << "Virtual Monitor: Could not read reference frames." << std::endl;
+    // Take a snapshot from the Kinect for the reference frame
+    KinectReaderFrames *frames = this->reader->readFrames();
+    if (frames == NULL) {
+        std::cout << "InteractionDetector: Could not read reference frames." << std::endl;
         return -1;
     }
-    this->physicalManager->setReferenceFrame(this->referenceFrames->depth);
+
+    // Copy data to a new frame and save as a reference
+    size_t byteCount = frames->depth->width * frames->depth->height * frames->depth->bytes_per_pixel;
+    char *referenceDepthData = (char *)malloc(sizeof(char) * byteCount);
+    std::memcpy(referenceDepthData, frames->depth->data, byteCount);
+    this->referenceDepthFrame = new libfreenect2::Frame(frames->depth->width, frames->depth->height, frames->depth->bytes_per_pixel, (unsigned char *)referenceDepthData);
+    this->reader->releaseFrames(frames);
+    this->physicalManager->setReferenceFrame(this->referenceDepthFrame);
 
     return 0;
 }
@@ -58,7 +65,7 @@ int InteractionDetector::start(bool displayViewer) {
 Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
     KinectReaderFrames *frames = this->reader->readFrames();
     if (frames == NULL) {
-        std::cout << "Virtual Monitor: Could not read frames." << std::endl;
+        std::cout << "VirtualMonitor: Could not read frames." << std::endl;
         return NULL;
     }
 
@@ -95,6 +102,9 @@ Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
         }
     }
 
+    if (frames->depth == this->physicalManager->getReferenceFrame()) {
+        this->physicalManager->setReferenceFrame(NULL);
+    }
     this->reader->releaseFrames(frames);
     return interaction;
 }
@@ -103,7 +113,9 @@ int InteractionDetector::stop() {
     this->reader->stop();
 
     // Free the reference frames set in this->start()
-    this->reader->releaseFrames(this->referenceFrames);
+    delete[] this->referenceDepthFrame->data;
+    delete this->referenceDepthFrame;
+    this->referenceDepthFrame = NULL;
 
     return 0;
 }
