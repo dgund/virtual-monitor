@@ -21,6 +21,6 @@
 //#define VIRTUALMONITOR_OUTPUT_PPM
 
 // Uncomment to enable the Viewer to display live Kinect data
-#define VIRTUALMONITOR_OUTPUT_VIEWER
+//#define VIRTUALMONITOR_OUTPUT_VIEWER
 
 #endif /* VIRTUALMONITOR_H */
