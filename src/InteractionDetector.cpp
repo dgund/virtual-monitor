@@ -53,13 +53,6 @@ int InteractionDetector::start(bool displayViewer) {
     return 0;
 }
 
-// TODO get rid away 
-static int counter = 0;
-static Coord3D bottomRight;
-static Coord3D topRight;
-static Coord3D bottomLeft;
-static Coord3D topLeft;
-
 Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
     KinectReaderFrames *frames = this->reader->readFrames();
     if (frames == NULL) {
@@ -75,47 +68,11 @@ Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
     // Call VirtualManager to check for an interaction (with physical coordinates)
     Interaction *interaction = this->physicalManager->detectInteraction(frames->depth, interactionPPMFilename);
 
-    // TODO get rid of this
-    switch (counter) {
-        case 0: {
-            topLeft = *(interaction->physicalLocation);
-            std::cout << "topLeft set: (" << topLeft.x << ", " << topLeft.y << ")\n";
-            counter++;
-            break;
-        }
-        case 1: {
-            topRight = *(interaction->physicalLocation);
-            std::cout << "topRight set: (" << topRight.x << ", " << topRight.y << ")\n";
-            counter++;
-            break;
-        }
-        case 2: {
-            bottomLeft = *(interaction->physicalLocation);
-            std::cout << "bottomLeft set: (" << bottomLeft.x << ", " << bottomLeft.y << ")\n";
-            counter++;
-            break;
-        }
-        case 3: {
-            bottomRight = *(interaction->physicalLocation);
-            std::cout << "bottomRight set: (" << bottomRight.x << ", " << bottomRight.y << ")\n";
-            this->virtualManager->setScreenPhysical(bottomRight, topRight, bottomLeft, topLeft);
-            this->virtualManager->setScreenVirtual(100, 100);
-            counter++;
-            break;
-        }
-        default: {
-            break;
-        }
-    }
-
     if (interaction != NULL) {
-        // TODO Call VirtualManager to get virtual coordinates
-        // TODO get rid of if statement
-        if (counter > 3) {
-            this->virtualManager->setVirtualCoord(interaction);
-            Coord2D vcoord = *(interaction->virtualLocation);
-            std::cout << "VIRTUAL COORDINATE: (" << vcoord.x << ", " << vcoord.y << ")\n";
-        }
+        /*this->virtualManager->setVirtualCoord(interaction);
+        Coord2D vcoord = *(interaction->virtualLocation);
+        std::cout << "VIRTUAL COORDINATE: (" << vcoord.x << ", " << vcoord.y << ")\n";*/
+        std::cout << "PHYSICAL COORDINATE: (" << interaction->physicalLocation->x << ", " << interaction->physicalLocation->y << ")\n";
     }
 
     if (shouldOutputPPMData) {
