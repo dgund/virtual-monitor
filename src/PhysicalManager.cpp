@@ -23,12 +23,14 @@ namespace virtualMonitor {
 #define DEPTH_FRAME_HEIGHT 424
 #define DEPTH_FRAME_BYTES_PER_PIXEL 4
 
+#define DEPTH_VALID(x) (DEPTH_MIN <= x && x <= DEPTH_MAX)
 #define DEPTH_FRAME_2D_TO_1D(x,y) (y * DEPTH_FRAME_WIDTH + x)
 
 #define DEPTH_MIN 500
 #define DEPTH_MAX 9000
 
 #define DEPTH_SMOOTHING_DELTA 2
+#define REFERENCE_DEPTH_SMOOTHING_DELTA 4
 
 #define REGRESSION_N 100
 #define VARIANCE_BOX_SIDE_LENGTH 15
@@ -99,10 +101,10 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame,
         for (int x = surfaceLeftX; x < depthFrame->width && x < surfaceRightX; x++) {
 
             float pixelDepth = this->pixelDepth(depthFrame, x, y);
-            bool isPixelAnomaly = this->isPixelAnomaly(depthFrame, x, y, DEPTH_SMOOTHING_DELTA);
+            bool isPixelSurfaceAnomaly = this->isPixelSurfaceAnomaly(depthFrame, x, y, DEPTH_SMOOTHING_DELTA);
 
             std::string pixelColor = PIXEL_DEFAULT;
-            if (isPixelAnomaly) {
+            if (isPixelSurfaceAnomaly) {
                 pixelColor = PIXEL_ANOMALY;
             } else {
                 pixelColor = PIXEL_SURFACE;
@@ -111,10 +113,10 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame,
             // If an interaction point has not already been found, check this pixel for an interaction
             if (interaction == NULL) {
                 // Anomaly test: If the pixel depth differs significantly from the surface and reference
-                if (isPixelAnomaly) {
+                if (isPixelSurfaceAnomaly) {
                     // Anomaly edge test: If the pixel is on the edge of the anomaly (where the interaction would be)
-                    bool isPixelAnomalyEdge = this->isPixelAnomalyEdge(depthFrame, x, y, DEPTH_SMOOTHING_DELTA);
-                    if (isPixelAnomalyEdge) {
+                    bool isPixelSurfaceAnomalyEdge = this->isPixelSurfaceAnomalyEdge(depthFrame, x, y, DEPTH_SMOOTHING_DELTA);
+                    if (isPixelSurfaceAnomalyEdge) {
                         // Variance test: If the variance around the pixel is small enough for it to be near the surface
                         float variance = this->depthVariance(depthFrame, x, y, VARIANCE_BOX_SIDE_LENGTH);
                         bool isAnomalyNearSurface = variance <= INTERACTION_VARIANCE_MAX;
@@ -169,22 +171,31 @@ Interaction *PhysicalManager::detectInteraction(std::string depthFrameFilename, 
 
 bool PhysicalManager::isPixelAnomaly(libfreenect2::Frame *depthFrame, int x, int y, int delta) {
     return (
+        // depthFrame is the reference (this is a weak constraint, so always set a reference), or
+        (depthFrame == this->referenceFrame) ||
+        // Pixel is not similar to the reference frame
+        !this->isPixelOnReference(depthFrame, x, y, delta)
+    );
+}
+
+bool PhysicalManager::isPixelSurfaceAnomaly(libfreenect2::Frame *depthFrame, int x, int y, int delta) {
+    return (
         // Pixel is not on the surface, and
         !this->isPixelOnSurface(depthFrame, x, y, delta) &&
         // Pixel is not on the edge of the surface, and
         !this->isPixelOnSurfaceEdge(depthFrame, x, y) &&
-        // Pixel is not similar to the reference frame (if the depthFrame is not the reference)
-        ((depthFrame == this->referenceFrame) || !this->isPixelOnReference(depthFrame, x, y, delta))
+        // Pixel is an anomaly
+        this->isPixelAnomaly(depthFrame, x, y, delta)
     );
 }
 
-bool PhysicalManager::isPixelAnomalyEdge(libfreenect2::Frame *depthFrame, int x, int y, int delta) {
-    // PIxel anomaly edge if a neighboring point to the side or below is not an anomaly
+bool PhysicalManager::isPixelSurfaceAnomalyEdge(libfreenect2::Frame *depthFrame, int x, int y, int delta) {
+    // Pixel anomaly edge if a neighboring point to the side or below is not an anomaly
     for (int movingY = y; movingY <= y + 1; movingY++) {
         if (0 <= movingY && movingY < depthFrame->height) {
             for (int movingX = x - 1; movingX <= x + 1; movingX++) {
                 if (0 <= movingX && movingX < depthFrame->width) {
-                    if (!this->isPixelAnomaly(depthFrame, movingX, movingY, delta)) {
+                    if (!this->isPixelSurfaceAnomaly(depthFrame, movingX, movingY, delta)) {
                         return true;
                     }
                 }
@@ -200,6 +211,8 @@ bool PhysicalManager::isAnomalySizeAtLeast(libfreenect2::Frame *depthFrame, int 
     if (!this->isPixelAnomaly(depthFrame, x, y, delta)) {
         return count;
     }
+
+    bool depthFrameIsNotReference = (depthFrame != this->referenceFrame);
 
     // Queue of coordinates to check
     std::queue<Coord2D> coordsToCheck;
@@ -227,7 +240,12 @@ bool PhysicalManager::isAnomalySizeAtLeast(libfreenect2::Frame *depthFrame, int 
                 for (int movingX = coord.x - 1; movingX <= coord.x + 1; movingX++) {
                     if (movingX >= 0 && movingX < depthFrame->width) {
                         // If the neighboring point is also a disturbance, add it to the queue to check
-                        bool neighborIsAnomaly = this->isPixelAnomaly(depthFrame, movingX, movingY, delta);
+                        bool neighborIsAnomaly;
+                        if (depthFrameIsNotReference) {
+                            neighborIsAnomaly = this->isPixelAnomaly(depthFrame, movingX, movingY, REFERENCE_DEPTH_SMOOTHING_DELTA);
+                        } else {
+                            neighborIsAnomaly = this->isPixelSurfaceAnomaly(depthFrame, movingX, movingY, delta);
+                        }
                         int neighborIndex = DEPTH_FRAME_2D_TO_1D(movingX,movingY);
                         bool neighborHasNotBeenChecked = (coordsChecked.find(neighborIndex) == coordsChecked.end());
                         if (neighborIsAnomaly && neighborHasNotBeenChecked) {
@@ -257,8 +275,10 @@ float PhysicalManager::pixelDepth(libfreenect2::Frame *depthFrame, int x, int y,
                                                   depthFrame->data[byte_offset + 3]};
                     float depth;
                     std::memcpy(&depth, &depthChar, sizeof(depth));
-                    depthSum += depth;
-                    depthSize++;
+                    if (DEPTH_VALID(depth)) {
+                        depthSum += depth;
+                        depthSize++;
+                    }
                 }
             }
         }
@@ -278,14 +298,13 @@ bool PhysicalManager::isPixelOnSurface(libfreenect2::Frame *depthFrame, int x, i
     int yNext = y - 1;
     if (y == 0) yNext = y + 1;
     
-    float depth = this->pixelDepth(depthFrame, x, y, delta);
-
-    // If the depth is outside of the valid min and max, return false
-    bool depthValid = DEPTH_MIN <= depth && depth <= DEPTH_MAX;
-    if (!depthValid) {
+    // Bias invalid depths toward not being on surface
+    if (!DEPTH_VALID(this->pixelDepth(depthFrame, x, y, 0)) ||
+        !DEPTH_VALID(this->pixelDepth(depthFrame, x, yNext, 0))) {
         return false;
     }
 
+    float depth = this->pixelDepth(depthFrame, x, y, delta);
     float depthNext = this->pixelDepth(depthFrame, x, yNext, delta);
     float depthChange = depth - depthNext;
 
@@ -307,6 +326,12 @@ bool PhysicalManager::isPixelOnReference(libfreenect2::Frame *depthFrame, int x,
     int yNext = y - 1;
     if (y == 0) yNext = y + 1;
 
+    // Bias invalid depths toward being on reference
+    if (!DEPTH_VALID(this->pixelDepth(depthFrame, x, y, 0)) ||
+        !DEPTH_VALID(this->pixelDepth(depthFrame, x, yNext, 0))) {
+        return true;
+    }
+
     float depth = this->pixelDepth(depthFrame, x, y, delta);
     float depthNext = this->pixelDepth(depthFrame, x, yNext, delta);
     float depthChange = depth - depthNext;
@@ -315,13 +340,13 @@ bool PhysicalManager::isPixelOnReference(libfreenect2::Frame *depthFrame, int x,
     float referenceDepthNext = this->pixelDepth(this->referenceFrame, x, yNext, delta);
     float referenceDepthChange = referenceDepth - referenceDepthNext;
 
-    // Checks if depth is within 10 mm of reference depth
+    // Checks if depth is within 100 mm of reference depth
     bool depthSimilarToReference = std::abs(depth - referenceDepth) < INTERACTION_REFERENCE_DEPTH_DIFFERENCE_MIN;
 
     // Checks if the change in depth to an adjacent point is within 5 mm of the reference change
     bool slopeSimilarToReference = std::abs(depthChange - referenceDepthChange) < INTERACTION_REFERENCE_SLOPE_DIFFERENCE_MIN;
 
-    return depthSimilarToReference && slopeSimilarToReference;
+    return (depthSimilarToReference && slopeSimilarToReference);
 }
 
 bool PhysicalManager::isPixelOnSurfaceEdge(libfreenect2::Frame *depthFrame, int x, int y) {
@@ -422,37 +447,36 @@ int PhysicalManager::updateSurfaceBoundsForReference() {
 
 float PhysicalManager::depthVariance(libfreenect2::Frame *depthFrame, int x, int y, int boxSideLength) {
 
-	// variance = E[X^2] - E[X]^2, ie (mean of squared data) - (mean of data)^2
+    // variance = E[X^2] - E[X]^2, ie (mean of squared data) - (mean of data)^2
 
-	int lowerBound = (boxSideLength / 2);
-	int upperBound = ((boxSideLength - 1) / 2);
-	long sumDepths = 0;
-	long sumSquareDepths = 0;
-	for (int movingY = y - lowerBound; movingY <= y + upperBound; movingY++) {
+    int lowerBound = (boxSideLength / 2);
+    int upperBound = ((boxSideLength - 1) / 2);
+    long sumDepths = 0;
+    long sumSquareDepths = 0;
+    int count = 0;
+    for (int movingY = y - lowerBound; movingY <= y + upperBound; movingY++) {
         int surfaceLeftX = this->surfaceLeftXForY[movingY];
         int surfaceRightX = this->surfaceRightXForY[movingY];
-		for (int movingX = x - lowerBound; movingX <= x + upperBound; movingX++) {
+        for (int movingX = x - lowerBound; movingX <= x + upperBound; movingX++) {
             bool isPixelInFrame = movingY >= 0 && movingY < depthFrame->height && movingX >= 0 && movingX < depthFrame->width;
-            bool isPixelInSurfaceBounds = surfaceLeftX <= movingX &&
-             movingX <= surfaceRightX;
-			if (isPixelInFrame && isPixelInSurfaceBounds) {
-				// Sum pixel depths in box
+            bool isPixelInSurfaceBounds = surfaceLeftX <= movingX && movingX <= surfaceRightX;
+            if (isPixelInFrame && isPixelInSurfaceBounds) {
+                // Sum pixel depths in box
                 // Approximate depth float as long to make addition faster
-				long depth = this->pixelDepth(depthFrame, movingX, movingY);
-				sumDepths += depth;
-				sumSquareDepths += (depth * depth);
-			}
-			else {
-				// If the pixel is outside of the frame and/or surface, use depth 0 (aka add nothing to sum) in order to create large variance, as this is likely not an interaction
-			}
-		}
-	}
+                long depth = this->pixelDepth(depthFrame, movingX, movingY);
+                if (DEPTH_VALID(depth)) {
+                    sumDepths += depth;
+                    sumSquareDepths += (depth * depth);
+                    count++;
+                }
+            }
+        }
+    }
 
-	float boxSideLength_f = (float)(boxSideLength);
-	float meanDepths_f = ((float)sumDepths) / (boxSideLength_f * boxSideLength_f);
-	float meanSquareDepths_f = ((float)sumSquareDepths) / (boxSideLength_f * boxSideLength_f);
+    float meanDepths_f = ((float)sumDepths) / ((float)count);
+    float meanSquareDepths_f = ((float)sumSquareDepths) / ((float)count);
     float variance = meanSquareDepths_f - (meanDepths_f * meanDepths_f);
-	return variance;
+    return variance;
 }
 
 int PhysicalManager::powerRegression(float *x, float *y, int n, float *a, float *b) {
@@ -540,30 +564,32 @@ int PhysicalManager::writeDepthFrameToSurfaceDepthPPM(libfreenect2::Frame *depth
             if (DEPTH_MIN < depth && depth < DEPTH_MAX) {
                 pixelColor = "100 0 0"; // dark red
             }
-            if (depthDifference < 300) {
-                pixelColor = "255 0 0"; // red
-            }
-            if (depthDifference < 250) {
-                pixelColor = "255 155 0"; // orange
-            }
-            if (depthDifference < 200) {
-                pixelColor = "255 255 0"; // yellow
-            }
-            if (depthDifference < 150) {
-                pixelColor = "0 255 0"; // green
-            }
-            if (depthDifference < 100) {
-                pixelColor = "0 0 255"; // blue
-            }
-            if (depthDifference < 50) {
-                pixelColor = "255 0 255"; // purple
-            }
-            if (depthDifference < 25) {
-                pixelColor = "150 150 150"; // gray
-            }
+            
             if (depthDifference < 10) {
                 pixelColor = "255 255 255"; // white
             }
+            else if (depthDifference < 25) {
+                pixelColor = "150 150 150"; // gray
+            }
+            else if (depthDifference < 50) {
+                pixelColor = "255 0 255"; // purple
+            }
+            else if (depthDifference < 100) {
+                pixelColor = "0 0 255"; // blue
+            }
+            else if (depthDifference < 150) {
+                pixelColor = "0 255 0"; // green
+            }
+            else if (depthDifference < 200) {
+                pixelColor = "255 255 0"; // yellow
+            }
+            else if (depthDifference < 250) {
+                pixelColor = "255 155 0"; // orange
+            }
+            else if (depthDifference < 300) {
+                pixelColor = "255 0 0"; // red
+            }
+
             pixelColors[DEPTH_FRAME_2D_TO_1D(x,y)] = pixelColor;
         }
     }

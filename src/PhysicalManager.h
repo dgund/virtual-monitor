@@ -42,7 +42,8 @@ class PhysicalManager {
 
     private:
         virtual bool isPixelAnomaly(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
-        virtual bool isPixelAnomalyEdge(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
+        virtual bool isPixelSurfaceAnomaly(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
+        virtual bool isPixelSurfaceAnomalyEdge(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
         virtual bool isAnomalySizeAtLeast(libfreenect2::Frame *depthFrame, int x, int y, int minSize, int delta=0);
 
         virtual float pixelDepth(libfreenect2::Frame *depthFrame, int x, int y, int delta=0);
