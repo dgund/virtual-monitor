@@ -13,7 +13,7 @@
 int numClicks;
 int x;
 int y;
-
+/*
 IMPLEMENT_APP(MainApp) // Initializes the MainApp class and tells our program
   // to run it
 bool MainApp::OnInit()
@@ -29,7 +29,7 @@ bool MainApp::OnInit()
     y = rand() % YMAX;
     return TRUE;
 }
-  
+*/
 BEGIN_EVENT_TABLE (MainFrame, wxFrame)
 // Tell the OS to run OnClick when the corresponding button is pressed
 EVT_BUTTON (BUTTON_tester, MainFrame::OnClick) // Tell the OS to run ButtonFrame::OnExit when

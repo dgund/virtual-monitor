@@ -4,13 +4,13 @@
 #include <wx/textctrl.h>
 #include <stdlib.h>
 #include <time.h>
- 
+/*
   class MainApp: public wxApp // MainApp is the class for our application
   { // MainApp just acts as a container for the window,
   public: // or frame in MainFrame
     virtual bool OnInit();
   };
- 
+ */
 class MainFrame: public wxFrame // MainFrame is the class for our window,
 { // It contains the window and all objects in it
     public:
