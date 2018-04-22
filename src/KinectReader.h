@@ -8,6 +8,7 @@
 
 #include <libfreenect2/libfreenect2.hpp>
 #include <libfreenect2/frame_listener_impl.h>
+#include <libfreenect2/packet_pipeline.h>
 #include <libfreenect2/registration.h>
 
 namespace virtualMonitor {
@@ -30,6 +31,7 @@ private:
     libfreenect2::Freenect2 freenect;
     libfreenect2::Freenect2Device *device;
     libfreenect2::SyncMultiFrameListener *listener;
+    libfreenect2::PacketPipeline *pipeline;
     libfreenect2::Registration *registration;
     bool readColor, readDepthAndInfrared, readColorDepth;
 
