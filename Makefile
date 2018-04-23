@@ -13,12 +13,13 @@ LIBWX_LDFLAGS = `wx-config --libs`
 
 ifeq ($(shell uname -s), Darwin)
 	LIBGL = -framework OpenGL -framework GLUT
+	LIBMOUSE = -framework ApplicationServices
 else
 	LIBGL = -lGL -lglut
 endif
 
 CXXFLAGS += $(LIBWX_CXXFLAGS)
-LDFLAGS += $(LIBFREENECT) $(LIBGL) $(LIBWX_LDFLAGS)
+LDFLAGS += $(LIBFREENECT) $(LIBGL) $(LIBMOUSE) $(LIBWX_LDFLAGS)
 
 BIN_DIR = ./bin
 BUILD_DIR = ./build
