@@ -55,7 +55,7 @@ double VirtualManager::findArcLength(float A_f, float B_f, int y1, int y2) {
 /* sets private vars for size and position of screen in physical coordinates
  * inputs: A and B for power regression, 
            calibration points of screen */
-void VirtualManager::setScreenPhysical(Coord3D bottomRight, Coord3D bottomLeft, Coord3D topRight, Coord3D topLeft) {
+void VirtualManager::setScreenPhysical(Coord3D topLeft, Coord3D topRight, Coord3D bottomLeft, Coord3D bottomRight) {
     this->bottomRight = bottomRight;
     this->bottomLeft = bottomLeft;
     this->topRight = topRight;

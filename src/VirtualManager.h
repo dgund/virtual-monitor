@@ -25,7 +25,7 @@ class VirtualManager {
     public: 
         VirtualManager();
         virtual ~VirtualManager();
-        virtual void setScreenPhysical(Coord3D bottomRight, Coord3D topRight, Coord3D bottomLeft, Coord3D topLeft);
+        virtual void setScreenPhysical(Coord3D topLeft, Coord3D topRight, Coord3D bottomLeft, Coord3D bottomRight);
         virtual void setScreenVirtual(int screenHeightVirtual, int screenWidthVirtual);
         virtual void setVirtualCoord(Interaction *interaction);
     
