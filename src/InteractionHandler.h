@@ -27,18 +27,22 @@ public:
 };
 
 class InteractionHandler {
-private:
-    HysteresisCounter *interactionCounter;
+protected:
     Coord2D *firstLocation;
     uint32_t firstTimestamp;
     Coord2D *lastLocation;
     uint32_t lastTimestamp;
+private:
+    HysteresisCounter *interactionCounter;
 public:
     InteractionHandler();
     virtual ~InteractionHandler();
 
     virtual int handleInteraction(Interaction *interaction);
 private:
+    virtual int handleInteractionStartEvent();
+    virtual int handleInteractionMoveEvent();
+    virtual int handleInteractionEndEvent();
     virtual uint32_t timeDifference(uint32_t time1, uint32_t time2);
 };
 

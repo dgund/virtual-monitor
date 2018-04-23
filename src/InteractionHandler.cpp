@@ -71,20 +71,40 @@ int InteractionHandler::handleInteraction(Interaction *interaction) {
 
     // If there is an interaction, move the mouse to the virtual location
     if (isOngoingInteraction) {
-        // Move mouse to the interaction location
+        this->lastLocation->x = interaction->virtualLocation->x;
+        this->lastLocation->y = interaction->virtualLocation->y;
+        this->lastTimestamp = interaction->time;
+
+        this->handleInteractionMoveEvent();
 
         // If this is a new interaction, click the mouse down
         if (!wasOngoingInteraction) {
-            // Tap down
+            this->firstLocation->x = interaction->virtualLocation->x;
+            this->firstLocation->y = interaction->virtualLocation->y;
+            this->firstTimestamp = interaction->time;
+
+            this->handleInteractionStartEvent();
         }
     }
 
     // If there was an interaction that just ended, click the mouse up
     else if (wasOngoingInteraction) {
-        // Tap up
-        // Possibly simulate click
+        this->handleInteractionEndEvent();
+        // TODO Possibly simulate click
     }
 
+    return 0;
+}
+
+int InteractionHandler::handleInteractionStartEvent() {
+    return 0;
+}
+
+int InteractionHandler::handleInteractionMoveEvent() {
+    return 0;
+}
+
+int InteractionHandler::handleInteractionEndEvent() {
     return 0;
 }
 
