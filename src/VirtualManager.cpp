@@ -39,7 +39,10 @@ double VirtualManager::findArcLength(float A_f, float B_f, int y1, int y2) {
     double B_d = (double)B_f;
     double invB_d = 1.0 / B_d;
 
-    for (int y = y1; y < y2; y++) {
+    int yMax = (y1 > y2) ? y1 : y2;
+    int yMin = (y1 <= y2) ? y1 : y2;
+
+    for (int y = yMin; y < yMax; y++) {
         double y_d = (double)y;
         double z_d = pow((y_d / A_d), invB_d);
         double zPlus1_d = pow(((y_d+1.0)/A_d), invB_d);
