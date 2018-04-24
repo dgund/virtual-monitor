@@ -15,10 +15,10 @@ class VirtualManager {
         double screenLength_d;
         float A_f;
         float B_f;
-        Coord3D bottomRight;
+        /*Coord3D bottomRight;
         Coord3D bottomLeft;
         Coord3D topRight;
-        Coord3D topLeft;
+        Coord3D topLeft;*/
         int screenHeightVirtual;
         int screenWidthVirtual;
 
