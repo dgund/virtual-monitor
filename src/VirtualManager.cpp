@@ -10,16 +10,20 @@
 
 namespace virtualMonitor {
 
+/* initalizes private vars of Virtual Manager */
 VirtualManager::VirtualManager() {
     this->screenLength_d = 0.0;
     this->A_f = 0.0;
     this->B_f = 0.0;
-    this->bottomRight = {0, 0, 0};
-    this->topRight = {0, 0, 0};
-    this->bottomLeft = {0, 0, 0};
-    this->topLeft = {0, 0, 0};
+    this->calibrationNumRows = 0;
+    this->calibrationNumCols = 0;
+    this->calibrationCoords = NULL;
+    this->averageYValues = NULL;
+    this->screenHeightVirtual = 0;
+    this->screenWidthVirtual = 0;
 }
 
+/* frees everything that was created using new() */
 VirtualManager::~VirtualManager() {
     // TODO free stuff
 }
@@ -55,27 +59,42 @@ double VirtualManager::findArcLength(float A_f, float B_f, int y1, int y2) {
     return (len_d < 0.0) ? (-1.0 * len_d) : len_d;
 }
 
-/* sets private vars for size and position of screen in physical coordinates
- * inputs: A and B for power regression, 
-           calibration points of screen */
-void VirtualManager::setScreenPhysical(Coord3D topLeft, Coord3D topRight, Coord3D bottomLeft, Coord3D bottomRight) {
-    this->bottomRight = bottomRight;
-    this->bottomLeft = bottomLeft;
-    this->topRight = topRight;
-    this->topLeft = topLeft;
+/* sets private vars for calibration points of screen (ie physical coords of screen)
+ * inputs: number of rows and number of cols of calibration points,
+           array of (pointers to) 3D physical coordinates of calibration points */
+void VirtualManager::setCalibrationPoints(int rows, int cols, Coord3D **calibrationCoords) {
+    // set private vars
+    this->calibrationNumRows = rows;
+    this->calibrationNumCols = cols;
+    this->calibrationCoords = calibrationCoords;
+    this->averageYValues = new int[rows]; //TODO is this how you create a new array?
+    // determine average y-value of each row of calibration points
+    int currIndex = 0;
+    for (int row = 0; row < rows; row++) {
+        int sumYValues = 0;
+        for (int col = 0; col < cols; col++) {
+            sumYValues = calibrationCoords[currIndex]->y;
+        }
+        this->averageYValues[row] = sumYValues / cols;
+        // possible TODO - also compute variance of y-values and print warning if it's high
+        //     ie, print warning if the y-values of a row vary a lot
+    currIndex++;
+    }
 }
 
-/* sets private vars for size of screen in virtual coordinates */
+/* sets private vars for size of screen (in pixels) 
+ * inputs: height of screen, width of screen */
 void VirtualManager::setScreenVirtual(int screenHeightVirtual, int screenWidthVirtual) {
     this->screenHeightVirtual = screenHeightVirtual;
     this->screenWidthVirtual = screenWidthVirtual;
 }
 
 /* takes the physical coordinate of an interaction and updates its 
-   virtual coordinate */
+   virtual coordinate 
+ * inputs: interaction whose virtual coordinate should be updated */
 void VirtualManager::setVirtualCoord(Interaction *interaction) {
     // make sure VirtualManager private vars have been initialized
-    if (this->bottomRight.y == 0 || this->screenHeightVirtual == 0) {
+    if (this->calibrationCoords == NULL || this->screenHeightVirtual == 0) {
         // TODO print error or check more values?
         std::cout << "setVirtualCoord() called before initial values have been set\n";
         return;
@@ -87,10 +106,10 @@ void VirtualManager::setVirtualCoord(Interaction *interaction) {
         
         this->A_f = interaction->surfaceRegressionA;
         this->B_f = interaction->surfaceRegressionB;
-        this->screenLength_d = findArcLength(this->A_f, this->B_f, this->bottomRight.y, this->topRight.y);
+        this->screenLength_d = findArcLength(this->A_f, this->B_f, this->averageYValues[0], this->averageYValues[this->calibrationNumRows - 1]);
     }
 
-    // set y-coordinate of virtual location
+    /*// set y-coordinate of virtual location
     double interactionHeight_d = findArcLength(this->A_f, this->B_f, this->bottomRight.y, interaction->physicalLocation->y);
     double percentageHeight_d = interactionHeight_d / this->screenLength_d;
     interaction->virtualLocation->y = (int)(((double)screenHeightVirtual) * percentageHeight_d);
@@ -101,12 +120,12 @@ void VirtualManager::setVirtualCoord(Interaction *interaction) {
     double xRight_d = xRightCurve(interaction->physicalLocation->y);
     double x_d = (double)(interaction->physicalLocation->x);
     double percentRight = (xLeft_d - x_d) / (xLeft_d - xRight_d);
-    interaction->virtualLocation->x = (int)((double)(this->screenWidthVirtual) * percentRight);
+    interaction->virtualLocation->x = (int)((double)(this->screenWidthVirtual) * percentRight);*/
 }
 
 /* returns the physical x-coordinate of the left edge of the screen at height y */
 double VirtualManager::xLeftCurve(int y) {
-    double yBottom_d = (double)(this->bottomLeft.y);
+    /*double yBottom_d = (double)(this->bottomLeft.y);
     double yTop_d = (double)(this->topLeft.y);
     double xBottom_d = (double)(this->bottomLeft.x);
     double xTop_d = (double)(this->topLeft.x);
@@ -114,12 +133,13 @@ double VirtualManager::xLeftCurve(int y) {
 
     // x = (y - y2) * ((x2 - x1)/(y2 - y1)) + x2
     double slopeInverse_d = (xTop_d - xBottom_d) / (yTop_d - yBottom_d);
-    return (y_d - yTop_d) * slopeInverse_d + xTop_d;
+    return (y_d - yTop_d) * slopeInverse_d + xTop_d;*/
+    return 0.0;
 }
 
 /* returns the physical x-coordinate of the right edge of the screen at height y */
 double VirtualManager::xRightCurve(int y) {
-    double yBottom_d = (double)(this->bottomRight.y);
+    /*double yBottom_d = (double)(this->bottomRight.y);
     double yTop_d = (double)(this->topRight.y);
     double xBottom_d = (double)(this->bottomRight.x);
     double xTop_d = (double)(this->topRight.x);
@@ -127,7 +147,8 @@ double VirtualManager::xRightCurve(int y) {
 
     // x = (y - y2) * ((x2 - x1)/(y2 - y1)) + x2
     double slopeInverse_d = (xTop_d - xBottom_d) / (yTop_d - yBottom_d);
-    return (y_d - yTop_d) * slopeInverse_d + xTop_d;
+    return (y_d - yTop_d) * slopeInverse_d + xTop_d;*/
+    return 0.0;
 }
 
 }

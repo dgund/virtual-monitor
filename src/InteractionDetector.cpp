@@ -5,6 +5,7 @@
 
 #include "InteractionDetector.h"
 
+#include <cstring>
 #include <unistd.h>
 #include <iostream>
 
@@ -21,8 +22,6 @@ InteractionDetector::InteractionDetector() {
     this->referenceDepthFrame = NULL;
     this->viewer = new Viewer();
     this->virtualManager = new VirtualManager();
-    this->virtualManager->setScreenVirtual(100, 100);
-    this->virtualManager->setScreenPhysical({69, 232, 1059}, {147, 152, 1616}, {407, 217, 1098}, {352, 144, 1650});
 }
 
 InteractionDetector::~InteractionDetector() {
