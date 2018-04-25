@@ -4,7 +4,7 @@
 */
 
 #ifndef VIRTUALMANAGER_H
-#define VIRTUALMANAGER__H
+#define VIRTUALMANAGER_H
 
 #include "Interaction.h"
 
