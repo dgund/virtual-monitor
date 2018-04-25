@@ -126,6 +126,8 @@ void VirtualManager::setVirtualCoord(Interaction *interaction) {
     int interactionX = interaction->physicalLocation->x;
     int numCols = this->calibrationNumCols;
     int numRows = this->calibrationNumRows;
+    double screenWidth_d = (double)this->screenWidthVirtual;
+    double screenHeight_d = (double)this->screenHeightVirtual;
 
     /*** determine which calibration cell interaction is in ***/
     // determine which calibration rows the interaction is between
@@ -147,39 +149,48 @@ void VirtualManager::setVirtualCoord(Interaction *interaction) {
         }
     }
 
+    // the indices of the calibration points around the interaction
+    int topLeftIndex = (calibrationRow-1) * numCols + calibrationCol;
+    int bottomLeftIndex = calibrationRow * numCols + calibrationCol;
+    int topRightIndex = (calibrationRow-1) * numCols + calibrationCol+1;
+    int bottomRightIndex = calibrationRow * numCols + calibrationCol+1;
+
     /*** calculate percentRight ***/
     // calculate percentRight of calibrationCol
-    double numCols_d = (double)numCols;
-    double percentRightCol_d = ((double)calibrationCol) / (numCols_d-1.0);
+    double leftVirtualX_d = (double)this->calibrationCoordsVirtual[topLeftIndex]->x;
+    double rightVirtualX_d = (double)this->calibrationCoordsVirtual[topRightIndex]->x;
+    double percentRightCol_d = leftVirtualX_d / screenWidth_d;
     // calculate percentRight of interaction within calibration cell
-    Coord3D *topLeftPoint = this->avgCalCoords[(calibrationRow-1) * numCols + calibrationCol];
-    Coord3D *bottomLeftPoint = this->avgCalCoords[calibrationRow * numCols + calibrationCol];
+    Coord3D *topLeftPoint = this->avgCalCoords[topLeftIndex];
+    Coord3D *bottomLeftPoint = this->avgCalCoords[bottomLeftIndex];
     double xLeft_d = getXValue(topLeftPoint, bottomLeftPoint, interactionY);
-    Coord3D *topRightPoint = this->avgCalCoords[(calibrationRow-1) * numCols + calibrationCol+1];
-    Coord3D *bottomRightPoint = this->avgCalCoords[calibrationRow * numCols + calibrationCol+1];
+    Coord3D *topRightPoint = this->avgCalCoords[topRightIndex];
+    Coord3D *bottomRightPoint = this->avgCalCoords[bottomRightIndex];
     double xRight_d = getXValue(topRightPoint, bottomRightPoint, interactionY);
     double x_d = (double)(interactionX);
     double percentRightInteraction_d = (xLeft_d - x_d) / (xLeft_d - xRight_d);
     // calculate percentRight
-    double percentRight_d = percentRightCol_d + (percentRightInteraction_d / (numCols_d-1.0));
+    double scaleX_d = (rightVirtualX_d - leftVirtualX_d) / screenWidth_d;
+    double percentRight_d = percentRightCol_d + (percentRightInteraction_d * scaleX_d);
 
     /*** calculate percentDown ***/
     // calculate percentDown of calibrationRows
-    double calibrationRow_d = (double)calibrationRow;
-    double numRows_d = (double)numRows;
-    double percentDownRow_d = (calibrationRow_d-1.0) / (numRows_d-1.0);
+    double topVirtualY_d = (double)this->calibrationCoordsVirtual[topLeftIndex]->y;
+    double bottomVirtualY_d = (double)this->calibrationCoordsVirtual[bottomLeftIndex]->y;
+    double percentDownRow_d = topVirtualY_d / screenHeight_d;
     // calculate percentDown of interaction within calibration cell
     double yGreater_d = (double)(this->averageYValues[calibrationRow]);
     double yLess_d = (double)(this->averageYValues[calibrationRow-1]);
     double y_d = (double)(interactionY);
     double percentDownInteraction_d = (y_d - yLess_d) / (yGreater_d - yLess_d);
     // calculate percentDown
-    double percentDown_d = percentDownRow_d + (percentDownInteraction_d / (numRows_d-1.0));
+    double scaleY_d = (bottomVirtualY_d - topVirtualY_d) / screenHeight_d;
+    double percentDown_d = percentDownRow_d + (percentDownInteraction_d * scaleY_d);
 
      /*** set virtual coords ***/
      // TODO cap percentRight/Down between 0 and 1
-     interaction->virtualLocation->x = (int)(((double)this->screenWidthVirtual) * percentRight_d);
-     interaction->virtualLocation->y = (int)(((double)this->screenHeightVirtual) * percentDown_d);
+     interaction->virtualLocation->x = (int)(screenWidth_d * percentRight_d);
+     interaction->virtualLocation->y = (int)(screenHeight_d * percentDown_d);
 
 }
 
