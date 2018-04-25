@@ -201,8 +201,8 @@ void VirtualMonitorFrame::detectionThreadFn() {
     InteractionHandler *handler = new InteractionHandler();
 
 #ifdef VIRTUALMONITOR_TEST_INPUTS
-    // Detect interaction with isCalibrating = false
-    Interaction *interaction = detector->testDetectInteraction(false);
+    // Detect interaction with isCalibrating = false, outputPPMData = true
+    Interaction *interaction = detector->testDetectInteraction(false, true);
     // Handle interaction
     handler->handleInteraction(interaction);
     if (interaction != NULL) {
@@ -223,7 +223,7 @@ void VirtualMonitorFrame::detectionThreadFn() {
     // Run until cancellation token
     while (!this->detectionShouldCancel) {
         // Detect interaction with isCalibrating = false
-        Interaction *interaction = detector->detectInteraction(false);
+        Interaction *interaction = detector->detectInteraction();
         // Handle interaction
         handler->handleInteraction(interaction);
         if (interaction != NULL) {

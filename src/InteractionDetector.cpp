@@ -66,7 +66,7 @@ int InteractionDetector::start() {
  *          calibrationCoords is an array of pointers to physical calibration coordinates
  * Output: pointer to an Interaction (NULL if no interaction occurred)
  */
-Interaction *InteractionDetector::detectInteraction(bool isCalibrating) {
+Interaction *InteractionDetector::detectInteraction(bool isCalibrating, bool shouldOutputPPMData) {
     KinectReaderFrames *frames = this->reader->readFrames();
     // Check for issues reading frames
     if (frames == NULL) {
@@ -74,12 +74,24 @@ Interaction *InteractionDetector::detectInteraction(bool isCalibrating) {
         return NULL;
     }
 
+    std::string interactionPPMFilename = "";
+    if (shouldOutputPPMData) {
+        interactionPPMFilename = INTERACTION_PPM_FILENAME;
+    }
+
     // Call PhysicalManager to check for an interaction and update physicalLocation coordiantes
-    Interaction *interaction = this->physicalManager->detectInteraction(frames->depth, "");
+    Interaction *interaction = this->physicalManager->detectInteraction(frames->depth, interactionPPMFilename);
 
     // If there was an interaction and not currently calibrating, get virtual coordinates
     if (interaction != NULL && !isCalibrating) {
         // TODO Call VirtualManager to get virtual coordinates
+    }
+
+    // If option set to output physical depth PPM data, visualize that data
+    if (shouldOutputPPMData) {
+        this->physicalManager->writeDepthFrameToPPM(frames->depth, DEPTH_PPM_FILENAME);
+        this->physicalManager->writeDepthFrameToSurfaceDepthPPM(frames->depth, SURFACEDEPTH_PPM_FILENAME);
+        this->physicalManager->writeDepthFrameToSurfaceSlopePPM(frames->depth, SURFACESLOPE_PPM_FILENAME);
     }
 
     // If current frame is the reference frame, a new reference is needed
@@ -127,6 +139,7 @@ Interaction *InteractionDetector::testDetectInteraction(bool shouldOutputPPMData
         // TODO Call VirtualManager to get virtual coordinates
     }
 
+    // If option set to output physical depth PPM data, visualize that data
     if (shouldOutputPPMData) {
         this->physicalManager->writeDepthFrameToPPM(depthFrame, DEPTH_PPM_FILENAME);
         this->physicalManager->writeDepthFrameToSurfaceDepthPPM(depthFrame, SURFACEDEPTH_PPM_FILENAME);
