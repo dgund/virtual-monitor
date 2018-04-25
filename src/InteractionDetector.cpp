@@ -154,4 +154,12 @@ int InteractionDetector::freeInteraction(Interaction *interaction) {
     return 0;
 }
 
+void InteractionDetector::setScreenVirtual(int screenHeight, int screenWidth) {
+    this->virtualManager->setScreenVirtual(screenHeight, screenwidth);
+}
+
+void InteractionDetector::setCalibrationPoints(int rows, int cols, Coord3D **calibrationCoords) {
+    this->virtualManager->setCalibrationPoints(rows, cols, calibrationCoords);
+}
+
 } /* namespace virtualMonitor */

@@ -23,6 +23,8 @@ class InteractionDetector {
         virtual int stop();
         virtual Interaction *testDetectInteraction(bool shouldOutputPPMData=false);
         virtual int freeInteraction(Interaction *interaction);
+        virtual void setScreenVirtual(int screenHeight, int screenWidth);
+        virtual void setCalibrationPoints(int rows, int cols, Coord3D **calibrationCoords);
 
     private:
         KinectReader *reader;
