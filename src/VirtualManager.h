@@ -34,8 +34,7 @@ class VirtualManager {
     
     private:
         virtual double findArcLength(float A_f, float B_f, int y1, int y2);
-        virtual double xLeftCurve(int y);
-        virtual double xRightCurve(int y);
+        virtual double getXValue(Coord3D *topPoint, Coord3D *bottomPoint, int y);
 };
 
 } /* namespace virtualMonitor */

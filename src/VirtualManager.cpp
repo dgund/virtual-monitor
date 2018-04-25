@@ -109,46 +109,80 @@ void VirtualManager::setVirtualCoord(Interaction *interaction) {
         this->screenLength_d = findArcLength(this->A_f, this->B_f, this->averageYValues[0], this->averageYValues[this->calibrationNumRows - 1]);
     }
 
-    /*// set y-coordinate of virtual location
-    double interactionHeight_d = findArcLength(this->A_f, this->B_f, this->bottomRight.y, interaction->physicalLocation->y);
-    double percentageHeight_d = interactionHeight_d / this->screenLength_d;
-    interaction->virtualLocation->y = (int)(((double)screenHeightVirtual) * percentageHeight_d);
+    // copy some long variable names to shorter names to make things easier to read
+    int interactionY = interaction->physicalLocation->y;
+    int interactionX = interaction->physicalLocation->x;
+    int numCols = this->calibrationNumCols;
+    int numRows = this->calibrationNumRows;
+    Coord3D **calCoords = this->calibrationCoords;
 
-    // set x-coordinate of virtual location
-    // xLeft_d and xRight_d are the physical x-coordinates of the edge of the screen at height y
-    double xLeft_d = xLeftCurve(interaction->physicalLocation->y);
-    double xRight_d = xRightCurve(interaction->physicalLocation->y);
-    double x_d = (double)(interaction->physicalLocation->x);
-    double percentRight = (xLeft_d - x_d) / (xLeft_d - xRight_d);
-    interaction->virtualLocation->x = (int)((double)(this->screenWidthVirtual) * percentRight);*/
+    /*** determine which calibration cell interaction is in ***/
+    // determine which calibration rows the interaction is between
+    int calibrationRow; // the first calibration row whose y-value is greater than interaction's y-value
+    for (calibrationRow = 1; calibrationRow < numRows; calibrationRow++) {
+        if (this->averageYValues[calibrationRow] > interactionY) {
+            break; 
+        }
+    }
+    // determine which calibration cols the interaction is between 
+    int calibrationCol; // the first calibration col whose x-value is greater than the interaction's x-value
+    for (calibrationCol = numCols-2; calibrationCol >= 0; calibrationCol--) {
+        Coord3D *topPoint = calCoords[calibrationRow-1 * numCols + calibrationCol];
+        Coord3D *bottomPoint = calCoords[calibrationRow * numCols + calibrationCol];
+        int colXValue = getXValue(topPoint, bottomPoint, interactionY);
+        if (colXValue > interactionX) {
+            break;
+        }
+    }
+
+    /*** calculate percentRight ***/
+    // calculate percentRight of calibrationCol
+    double numCols_d = (double)numCols;
+    double percentRightCol_d = ((double)calibrationCol) / numCols_d;
+    // calculate percentRight of interaction within calibration cell
+    Coord3D *topLeftPoint = calCoords[calibrationRow-1 * numCols + calibrationCol];
+    Coord3D *bottomLeftPoint = calCoords[calibrationRow * numCols + calibrationCol];
+    double xLeft_d = getXValue(topLeftPoint, bottomLeftPoint, interactionY);
+    Coord3D *topRightPoint = calCoords[calibrationRow-1 * numCols + calibrationCol+1];
+    Coord3D *bottomRightPoint = calCoords[calibrationRow * numCols + calibrationCol+1];
+    double xRight_d = getXValue(topRightPoint, bottomRightPoint, interactionY);
+    double x_d = (double)(interactionX);
+    double percentRightInteraction_d = (xLeft_d - x_d) / (xLeft_d - xRight_d);
+    // calculate percentRight
+    double percentRight_d = percentRightCol_d + (percentRightInteraction_d / numCols_d);
+
+    /*** calculate percentDown ***/
+    // calculate percentDown of calibrationRows
+    double calibrationRow_d = (double)calibrationRow;
+    double numRows_d = (double)numRows;
+    double percentDownRow_d = calibrationRow_d / numRows_d;
+    // calculate percentDown of interaction within calibration cell
+    double yGreater_d = (double)(this->averageYValues[calibrationRow]);
+    double yLess_d = (double)(this->averageYValues[calibrationRow-1]);
+    double y_d = (double)(interactionY);
+    double percentDownInteraction_d = (y_d - yLess_d) / (yGreater_d - yLess_d);
+    // calculate percentDown
+    double percentDown_d = percentDownRow_d + (percentDownInteraction_d / numRows_d);
+
+     /*** set virtual coords ***/
+     interaction->virtualLocation->x = (int)(((double)this->screenWidthVirtual) * percentRight_d);
+     interaction->virtualLocation->y = (int)(((double)this->screenHeightVirtual) * percentDown_d);
+
 }
 
-/* returns the physical x-coordinate of the left edge of the screen at height y */
-double VirtualManager::xLeftCurve(int y) {
-    /*double yBottom_d = (double)(this->bottomLeft.y);
-    double yTop_d = (double)(this->topLeft.y);
-    double xBottom_d = (double)(this->bottomLeft.x);
-    double xTop_d = (double)(this->topLeft.x);
+/* returns the x-coordinate of the point with y-coordinate y, described by topPoint and bottomPoint *
+ * inputs: topPoint and bottomPoint describe a line,
+           y is the y-coordinate of the point for which the x-coordinate will be returned */
+double VirtualManager::getXValue(Coord3D *topPoint, Coord3D *bottomPoint, int y) {
+    double yBottom_d = (double)(bottomPoint->y);
+    double yTop_d = (double)(topPoint->y);
+    double xBottom_d = (double)(bottomPoint->x);
+    double xTop_d = (double)(topPoint->x);
     double y_d = (double)(y);
 
     // x = (y - y2) * ((x2 - x1)/(y2 - y1)) + x2
     double slopeInverse_d = (xTop_d - xBottom_d) / (yTop_d - yBottom_d);
-    return (y_d - yTop_d) * slopeInverse_d + xTop_d;*/
-    return 0.0;
-}
-
-/* returns the physical x-coordinate of the right edge of the screen at height y */
-double VirtualManager::xRightCurve(int y) {
-    /*double yBottom_d = (double)(this->bottomRight.y);
-    double yTop_d = (double)(this->topRight.y);
-    double xBottom_d = (double)(this->bottomRight.x);
-    double xTop_d = (double)(this->topRight.x);
-    double y_d = (double)(y);
-
-    // x = (y - y2) * ((x2 - x1)/(y2 - y1)) + x2
-    double slopeInverse_d = (xTop_d - xBottom_d) / (yTop_d - yBottom_d);
-    return (y_d - yTop_d) * slopeInverse_d + xTop_d;*/
-    return 0.0;
+    return (y_d - yTop_d) * slopeInverse_d + xTop_d;
 }
 
 }
