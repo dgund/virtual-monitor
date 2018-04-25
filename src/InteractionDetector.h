@@ -9,11 +9,7 @@
 #include "KinectReader.h"
 #include "Interaction.h"
 #include "PhysicalManager.h"
-<<<<<<< HEAD
-=======
-#include "Viewer.h"
 #include "VirtualManager.h"
->>>>>>> virtual-algorithm
 
 namespace virtualMonitor {
 
