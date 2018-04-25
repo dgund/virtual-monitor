@@ -52,6 +52,7 @@ void Calibrate::newButton()
 
     wxBitmapButton *button = new wxBitmapButton(this, wxID_HIGHEST+1, bitmap, wxPoint(xPos,yPos));
     currButton = button;
+    this->currButton->Show(true);
 }
 void Calibrate::changeButtonClicked()
 {

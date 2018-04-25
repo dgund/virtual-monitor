@@ -1,6 +1,6 @@
 #include <wx/wx.h>
 
-class Calibrate : public wxFrame
+class Calibrate: public wxFrame
 {
 public:
     public:
