@@ -155,7 +155,7 @@ int InteractionDetector::freeInteraction(Interaction *interaction) {
 }
 
 void InteractionDetector::setScreenVirtual(int screenHeight, int screenWidth) {
-    this->virtualManager->setScreenVirtual(screenHeight, screenwidth);
+    this->virtualManager->setScreenVirtual(screenHeight, screenWidth);
 }
 
 void InteractionDetector::setCalibrationPoints(int rows, int cols, Coord3D **calibrationCoords) {
