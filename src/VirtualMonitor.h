@@ -11,7 +11,7 @@
 
 #include <wx/wx.h>
 
-#include "CalInterface.h"
+#include "CalibrationFrame.h"
 
 #undef VIRTUALMONITOR_TEST_INPUTS
 #undef VIRTUALMONITOR_TEST_SNAPSHOT
@@ -21,6 +21,8 @@
 
 // Uncomment to use a single Kinect snapshot instead of the live Kinect
 //#define VIRTUALMONITOR_TEST_SNAPSHOT
+
+using namespace virtualMonitor;
 
 enum VirtualMonitorState {
     Paused,
@@ -41,10 +43,11 @@ private:
     wxButton *detectButton;
     wxButton *calibrateButton;
     wxStaticText *textLabel;
-    // Calibration interface file
-    Calibrate *calibrate;
+    // Calibration frame interface
+    CalibrationFrame *calibrationFrame;
     // Array of physical coordinates of calibration interactions
-    Coord3D **calibrationCoords;
+    Coord3D **calibrationPhysicalCoords;
+    Coord2D **calibrationVirtualCoords;
     // Whether currently Paused, Detecting, or Calibrating
     VirtualMonitorState state;
     // Threads for interaction managing
@@ -62,6 +65,7 @@ public:
 private:
     virtual int startDetection();
     virtual int stopDetection();
+    virtual int startCalibration();
     virtual void detectionThreadFn();
     virtual void calibrationThreadFn();
 

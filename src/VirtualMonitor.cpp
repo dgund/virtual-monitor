@@ -14,9 +14,10 @@
 #define LABEL_START_DETECTION "Start Detection"
 #define LABEL_STOP_DETECTION "Stop Detection"
 #define LABEL_CALIBRATE "Calibrate"
-// how many calibration rows and cols
-#define CAL_ROWS 3
-#define CAL_COLS 2
+
+// How many calibration rows and cols
+#define CALIBRATION_ROWS 3
+#define CALIBRATION_COLS 3
 
 using namespace virtualMonitor;
 
@@ -71,8 +72,17 @@ VirtualMonitorFrame::VirtualMonitorFrame() : wxFrame(NULL, wxID_ANY, wxT("Virtua
 
     panel->Fit();
 
-    // Initialize array of physical calibration data
-    this->calibrationCoords = new Coord3D*[NUM_ROWS*NUM_COLS];
+    // Initialize arrays of physical and virtual calibration data
+    this->calibrationPhysicalCoords = new Coord3D* [CALIBRATION_ROWS * CALIBRATION_COLS];
+    for (int i = 0; i < CALIBRATION_ROWS * CALIBRATION_COLS; i++) {
+        this->calibrationPhysicalCoords[i] = new Coord3D();
+    }
+    this->calibrationVirtualCoords = new Coord2D* [CALIBRATION_ROWS * CALIBRATION_COLS];
+    for (int i = 0; i < CALIBRATION_ROWS * CALIBRATION_COLS; i++) {
+        this->calibrationVirtualCoords[i] = new Coord2D();
+    }
+
+    this->calibrationFrame = NULL;
 }
 
 /*
@@ -88,7 +98,14 @@ VirtualMonitorFrame::~VirtualMonitorFrame() {
     delete this->calibrateButton;
     delete this->detectButton;
     delete this->panel;
-    delete this->calibrate;
+    for (int i = 0; i < CALIBRATION_ROWS * CALIBRATION_COLS; i++) {
+        delete this->calibrationPhysicalCoords[i];
+    }
+    delete[] this->calibrationPhysicalCoords;
+    for (int i = 0; i < CALIBRATION_ROWS * CALIBRATION_COLS; i++) {
+        delete this->calibrationVirtualCoords[i];
+    }
+    delete[] this->calibrationVirtualCoords;
 }
 
 /*
@@ -136,9 +153,6 @@ void VirtualMonitorFrame::OnCalibrate(wxCommandEvent& event) {
     case VirtualMonitorState::Paused:
         // Start calibration
         this->state = VirtualMonitorState::Calibrating;
-        // Open a new calibration window
-        this->calibrate = new Calibrate(wxT("Calibrate"), CAL_ROWS, CAL_COLS, 20);
-        this->calibrate->Show(true);
         // Start calibrating
         this->startCalibration();
         break;
@@ -187,10 +201,11 @@ void VirtualMonitorFrame::detectionThreadFn() {
     InteractionHandler *handler = new InteractionHandler();
 
 #ifdef VIRTUALMONITOR_TEST_INPUTS
-    Interaction *interaction = detector->testDetectInteraction(true);
+    // Detect interaction with isCalibrating = false
+    Interaction *interaction = detector->testDetectInteraction(false);
+    // Handle interaction
+    handler->handleInteraction(interaction);
     if (interaction != NULL) {
-        // Handle interaction
-        handler->handleInteraction(interaction);
         // Free interaction
         detector->freeInteraction(interaction);
     }
@@ -209,9 +224,9 @@ void VirtualMonitorFrame::detectionThreadFn() {
     while (!this->detectionShouldCancel) {
         // Detect interaction with isCalibrating = false
         Interaction *interaction = detector->detectInteraction(false);
+        // Handle interaction
+        handler->handleInteraction(interaction);
         if (interaction != NULL) {
-            // Handle interaction
-            handler->handleInteraction(interaction);
             // Free interaction
             detector->freeInteraction(interaction);
         }
@@ -234,8 +249,14 @@ void VirtualMonitorFrame::detectionThreadFn() {
  *  to continuously read Kinect data and look for interactions
  */
 int VirtualMonitorFrame::startCalibration() {
-    // Start interaction detection/handling on new thread
-    this->calibrationThread = std::thread(&VirtualMonitorFrame::calibrationThreadFn, this);
+    if (this->calibrationFrame != NULL) {
+        delete this->calibrationFrame;
+    }
+    this->calibrationFrame = new CalibrationFrame(CALIBRATION_ROWS, CALIBRATION_COLS);
+    this->calibrationFrame->Show(true);
+    
+    // TODO Start calibration interaction detection/handling on new thread
+    //this->calibrationThread = std::thread(&VirtualMonitorFrame::calibrationThreadFn, this);
     return 0;
 }
 
@@ -259,17 +280,23 @@ void VirtualMonitorFrame::calibrationThreadFn() {
 
     // Go through all calibration points
     int calibrationIndex = 0;
-    while (calibrationIndex < (CAL_ROWS * CAL_COLS)) {
+    while (calibrationIndex < (CALIBRATION_ROWS * CALIBRATION_COLS)) {
         // Detect interaction with isCalibrating = true
         Interaction *interaction = detector->detectInteraction(true);
+        // Determine whether this interaction was a click up
+        bool isCalibrationTapComplete = handler->handleInteraction(interaction);
+        if (isCalibrationTapComplete) {
+            // Set the physical coords of the calibration
+            this->calibrationPhysicalCoords[calibrationIndex]->x = interaction->physicalLocation->x;
+            this->calibrationPhysicalCoords[calibrationIndex]->y = interaction->physicalLocation->y;
+            this->calibrationPhysicalCoords[calibrationIndex]->z = interaction->physicalLocation->z;
+            // Set the virtual coords of the calibraiton
+            this->calibrationFrame->getCurrentCalibrationPoint(this->calibrationVirtualCoords[calibrationIndex]);
+            // Move on to next calibration point
+            this->calibrationFrame->displayNextCalibrationPoint();
+            calibrationIndex++;
+        }
         if (interaction != NULL) {
-            // Determine whether this interaction was a click up
-            bool calTap = handler->handleInteraction(interaction);
-            if (calTap) {
-                this->calibrationCoords[calibrationIndex] = interaction->physicalLocation;
-                this->calibrate->NextButton();
-                calibrationIndex++;
-            }
             // Free interaction
             detector->freeInteraction(interaction);
         }
