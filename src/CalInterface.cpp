@@ -1,45 +1,46 @@
 #include "CalInterface.h"
+/*
+ * Calibration constructor
+ */
 Calibrate::Calibrate(const wxString& title, int NumRows, int NumCols, int ButtonSize)
        : wxFrame(NULL, wxID_ANY, title, wxDefaultPosition, wxSize(500,500))
 {
-    // create menu bar
+    // Create menu bar
     CreateStatusBar(2);
     wxMenuBar *MainMenu = new wxMenuBar();
     SetMenuBar(MainMenu);
    
-    // save inputs
+    // Save inputs
     numRows = NumRows;
     numCols = NumCols;
     buttonSize = ButtonSize; 
-    
-    // calculations for button positioning
-    int xMax = wxSystemSettings::GetMetric(wxSYS_SCREEN_X);
-    int yMax = wxSystemSettings::GetMetric(wxSYS_SCREEN_Y);
+   
+    // Max screen size
     // -10 because screen is slightly smaller than GetMetric returns
-    xInterval = (xMax - buttonSize - 10) / (numCols - 1);
-    yInterval = (yMax - buttonSize - 10) / (numRows - 1);
+    XMax = wxSystemSettings::GetMetric(wxSYS_SCREEN_X) - 10;
+    YMax = wxSystemSettings::GetMetric(wxSYS_SCREEN_Y) - 10;
+    // Calculations for button positioning
+    xInterval = (xMax - buttonSize) / (numCols - 1);
+    yInterval = (yMax - buttonSize) / (numRows - 1);
     currIndex = 0;
-    /*
-    int x = 0;
-    int y = 0;
-    // add button controls with corners at corner of screen
-    for (int i = 0; i < numCols; i++) {
-        for (int j = 0; j < numRows; j++) {
-            x = i*Xinterval;
-            y = j*Yinterval;
-            wxBitmapButton *button = new wxBitmapButton(this, wxID_HIGHEST+1, bitmap, wxPoint(x,y));
-            button->Bind(wxEVT_BUTTON, &Calibrate::OnClick, this);
-        }
-    }
-    */
+    
     newButton();
     newButton();
 }
+
+/*
+ * Add a new yellow calibration button
+ */
 void Calibrate::newButton()
 {
+    // Calculate top left corner of calibration button
     int xPos = (currIndex % numCols) * xInterval;
     int yPos = (currIndex / numCols) * yInterval;
-    // create button image
+    // Center of calibration button
+    XPosCenter = xPos + (buttonSize / 2);
+    YPosCenter = yPos + (buttonSize / 2);
+    
+    // Create button image
     wxBitmap bitmap(buttonSize+2, buttonSize+2);
     wxMemoryDC dc;
     dc.SelectObject(bitmap);
@@ -54,6 +55,10 @@ void Calibrate::newButton()
     currButton = button;
     this->currButton->Show(true);
 }
+
+/*
+ * Change calibration button to green
+ */
 void Calibrate::changeButtonClicked()
 {
     wxBitmap bitmap2(buttonSize+2, buttonSize+2);
@@ -67,15 +72,10 @@ void Calibrate::changeButtonClicked()
     dc2.SelectObject( wxNullBitmap );
     currButton->SetBitmapLabel(bitmap2);
 }
-/*
-void Calibrate::OnClick( wxCommandEvent& event )
-  {
-        wxBitmapButton *pButton = wxDynamicCast(event.GetEventObject(), wxBitmapButton);
-        ChangeButtonClicked(pButton);
-  }
-*/
 
-// change previous button's color to green and add a new yellow button
+/*
+ * Change previous button's color to green and add a new yellow button
+ */
 void Calibrate::NextButton()
 {
     changeButtonClicked();

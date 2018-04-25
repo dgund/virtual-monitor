@@ -74,7 +74,7 @@ Interaction *InteractionDetector::detectInteraction(bool isCalibrating) {
         return NULL;
     }
 
-    // Call PhysicalManager to check for an interaction
+    // Call PhysicalManager to check for an interaction and update physicalLocation coordiantes
     Interaction *interaction = this->physicalManager->detectInteraction(frames->depth, "");
 
     // If there was an interaction and not currently calibrating, get virtual coordinates

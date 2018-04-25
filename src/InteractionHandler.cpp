@@ -55,16 +55,26 @@ InteractionHandler::~InteractionHandler() {
     delete this->lastLocation;
 }
 
-int InteractionHandler::handleInteraction(Interaction *interaction) {
+/*
+ * Determines whether an interaction has occurred and if so what type it is
+ * Input: interaction data
+ * Output: 
+ */
+bool InteractionHandler::handleInteraction(Interaction *interaction) {
     std::cout << "InteractionHandler: Interaction at x = " << interaction->physicalLocation->x << ", y = " << interaction->physicalLocation->y << ", depth = " << interaction->physicalLocation->z << std::endl;
 
+    // TODO should check for error?
+    /*
     if (interaction == NULL || interaction->virtualLocation == NULL) {
         return -1;
     }
+    */
 
+    // TODO is it actually an interaction?
     // Coordinates for a real interaction provided
     bool isInteraction = true;
 
+    // A user's click will be sampled multiple times, so recognize whether this is first/last contact
     bool wasOngoingInteraction = (this->interactionCounter->getValue() == HysteresisCounter::HysteresisValue::A);
     this->interactionCounter->updateForValue(isInteraction ? HysteresisCounter::HysteresisValue::A : HysteresisCounter::HysteresisValue::B);
     bool isOngoingInteraction = (this->interactionCounter->getValue() == HysteresisCounter::HysteresisValue::A);
@@ -90,10 +100,11 @@ int InteractionHandler::handleInteraction(Interaction *interaction) {
     // If there was an interaction that just ended, click the mouse up
     else if (wasOngoingInteraction) {
         this->handleInteractionEndEvent();
-        // TODO Possibly simulate click
+        // Output bool only used in calibration
+        return true;
     }
 
-    return 0;
+    return false;
 }
 
 int InteractionHandler::handleInteractionStartEvent() {

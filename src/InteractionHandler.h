@@ -38,7 +38,7 @@ public:
     InteractionHandler();
     virtual ~InteractionHandler();
 
-    virtual int handleInteraction(Interaction *interaction);
+    virtual bool handleInteraction(Interaction *interaction);
 private:
     virtual int handleInteractionStartEvent();
     virtual int handleInteractionMoveEvent();

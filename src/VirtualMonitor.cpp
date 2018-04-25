@@ -71,7 +71,8 @@ VirtualMonitorFrame::VirtualMonitorFrame() : wxFrame(NULL, wxID_ANY, wxT("Virtua
 
     panel->Fit();
 
-    // TODO initialize calibrationCoords array
+    // Initialize array of physical calibration data
+    this->calibrationCoords = new Coord3D*[NUM_ROWS*NUM_COLS];
 }
 
 /*
@@ -257,13 +258,18 @@ void VirtualMonitorFrame::calibrationThreadFn() {
     }
 
     // Go through all calibration points
-    int numCalibrationTaps = 0;
-    while (numCalibrationTaps < (CAL_ROWS * CAL_COLS)) {
+    int calibrationIndex = 0;
+    while (calibrationIndex < (CAL_ROWS * CAL_COLS)) {
         // Detect interaction with isCalibrating = true
         Interaction *interaction = detector->detectInteraction(true);
         if (interaction != NULL) {
-            // Handle interaction
-            handler->handleInteraction(interaction);
+            // Determine whether this interaction was a click up
+            bool calTap = handler->handleInteraction(interaction);
+            if (calTap) {
+                this->calibrationCoords[calibrationIndex] = interaction->physicalLocation;
+                this->calibrate->NextButton();
+                calibrationIndex++;
+            }
             // Free interaction
             detector->freeInteraction(interaction);
         }
