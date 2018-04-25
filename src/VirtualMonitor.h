@@ -35,6 +35,18 @@ public:
     virtual bool OnInit();
 };
 
+DECLARE_EVENT_TYPE(VIRTUALMONITOR_CALIBRATE_THREAD_UPDATE, -1);
+
+class VirtualMonitorCalibrationThread: public wxThread {
+protected:
+   wxEvtHandler* m_parent;
+
+public:
+   explicit VirtualMonitorCalibrationThread(wxEvtHandler* parent) : wxThread(), m_parent(parent) {}
+
+   ExitCode Entry() override;
+};
+
 class VirtualMonitorFrame: public wxFrame {
 // Private variables
 private:
@@ -52,7 +64,7 @@ private:
     VirtualMonitorState state;
     // Threads for interaction managing
     std::thread detectionThread;
-    std::thread calibrationThread;
+    VirtualMonitorCalibrationThread *calibrationThread;
     // Lets detectionThread know that is should stop
     std::atomic<bool> detectionShouldCancel;
 
@@ -66,17 +78,16 @@ private:
     virtual int startDetection();
     virtual int stopDetection();
     virtual int startCalibration();
+    virtual int stopCalibration();
     virtual void detectionThreadFn();
     virtual void calibrationThreadFn();
 
     void OnDetect(wxCommandEvent& event);
     void OnCalibrate(wxCommandEvent& event);
+    void OnCalibrateThreadUpdate(wxCommandEvent& event);
     void OnExit(wxCommandEvent& event);
         
     wxDECLARE_EVENT_TABLE();
 };
-
-void detectionThread();
-void calibrationThread();
 
 #endif /* VIRTUALMONITOR_H */

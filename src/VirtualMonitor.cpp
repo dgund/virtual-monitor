@@ -33,17 +33,19 @@ bool VirtualMonitorApp::OnInit() {
 
 /*** VirtualMonitorFrame ***/
 enum {
-    ID_DETECT = 1,
-    ID_CALIBRATE = 2
+    ID_DETECT_BTN = 1,
+    ID_CALIBRATE_BTN = 2
 };
+
+DEFINE_EVENT_TYPE(VIRTUALMONITOR_CALIBRATE_THREAD_UPDATE);
 
 /*
  * Event table for handling user interacting with controls
  */
 wxBEGIN_EVENT_TABLE(VirtualMonitorFrame, wxFrame)
-    EVT_MENU(ID_DETECT, VirtualMonitorFrame::OnDetect)
-    EVT_MENU(ID_CALIBRATE, VirtualMonitorFrame::OnCalibrate)
-    EVT_MENU(wxID_EXIT, VirtualMonitorFrame::OnExit)
+    EVT_MENU(ID_DETECT_BTN, VirtualMonitorFrame::OnDetect)
+    EVT_MENU(ID_CALIBRATE_BTN, VirtualMonitorFrame::OnCalibrate)
+    EVT_COMMAND(wxID_ANY, VIRTUALMONITOR_CALIBRATE_THREAD_UPDATE, VirtualMonitorFrame::OnCalibrateThreadUpdate)
 wxEND_EVENT_TABLE()
 
 /*
@@ -57,12 +59,12 @@ VirtualMonitorFrame::VirtualMonitorFrame() : wxFrame(NULL, wxID_ANY, wxT("Virtua
     this->panel->Show(true);
 
     // Add controls to panel
-    this->detectButton = new wxButton(this->panel, ID_DETECT, wxT(LABEL_START_DETECTION), wxPoint(10, 10));
-    Connect(ID_DETECT, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(VirtualMonitorFrame::OnDetect));
+    this->detectButton = new wxButton(this->panel, ID_DETECT_BTN, wxT(LABEL_START_DETECTION), wxPoint(10, 10));
+    Connect(ID_DETECT_BTN, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(VirtualMonitorFrame::OnDetect));
     this->detectButton->Show(true);
 
-    this->calibrateButton = new wxButton(this->panel, ID_CALIBRATE, wxT(LABEL_CALIBRATE), wxPoint(10, 40));
-    Connect(ID_CALIBRATE, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(VirtualMonitorFrame::OnCalibrate));
+    this->calibrateButton = new wxButton(this->panel, ID_CALIBRATE_BTN, wxT(LABEL_CALIBRATE), wxPoint(10, 40));
+    Connect(ID_CALIBRATE_BTN, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(VirtualMonitorFrame::OnCalibrate));
     this->calibrateButton->Show(true);
 
     // Show text that might be used to help user
@@ -156,6 +158,15 @@ void VirtualMonitorFrame::OnCalibrate(wxCommandEvent& event) {
         // Start calibrating
         this->startCalibration();
         break;
+    }
+}
+
+void VirtualMonitorFrame::OnCalibrateThreadUpdate(wxCommandEvent& event) {
+    int calibrationIndex = event.GetInt();
+    if (calibrationIndex < (CALIBRATION_ROWS * CALIBRATION_COLS) - 1) {
+        this->calibrationFrame->displayNextCalibrationPoint();
+    } else {
+        this->stopCalibration();
     }
 }
 
@@ -255,8 +266,23 @@ int VirtualMonitorFrame::startCalibration() {
     this->calibrationFrame = new CalibrationFrame(CALIBRATION_ROWS, CALIBRATION_COLS);
     this->calibrationFrame->Show(true);
     
+    this->calibrationThread = new VirtualMonitorCalibrationThread(this);
+    if (this->calibrationThread->Create() != wxTHREAD_NO_ERROR) {
+        return -1;
+    }
+    if (this->calibrationThread->Run() != wxTHREAD_NO_ERROR) {
+        return -1;
+    }
+
     // TODO Start calibration interaction detection/handling on new thread
     //this->calibrationThread = std::thread(&VirtualMonitorFrame::calibrationThreadFn, this);
+    return 0;
+}
+
+int VirtualMonitorFrame::stopCalibration() {
+    //this->calibrationThread->join();
+    this->calibrationFrame->Close();
+    this->state = VirtualMonitorState::Paused;
     return 0;
 }
 
@@ -292,8 +318,9 @@ void VirtualMonitorFrame::calibrationThreadFn() {
             this->calibrationPhysicalCoords[calibrationIndex]->z = interaction->physicalLocation->z;
             // Set the virtual coords of the calibraiton
             this->calibrationFrame->getCurrentCalibrationPoint(this->calibrationVirtualCoords[calibrationIndex]);
+            // TODO Notify UI thread of calibration update
+            
             // Move on to next calibration point
-            this->calibrationFrame->displayNextCalibrationPoint();
             calibrationIndex++;
         }
         if (interaction != NULL) {
@@ -306,4 +333,18 @@ void VirtualMonitorFrame::calibrationThreadFn() {
 
     delete detector;
     delete handler;
+}
+
+/*** VirtualMonitorCalibrationThread ***/
+
+wxThread::ExitCode VirtualMonitorCalibrationThread::Entry() {
+    for (int i = 0; i < (CALIBRATION_ROWS * CALIBRATION_COLS); i++) {
+        // notify the main thread
+        wxCommandEvent calibrationEvent(VIRTUALMONITOR_CALIBRATE_THREAD_UPDATE, wxID_ANY);
+        calibrationEvent.SetInt(i);
+        m_parent->AddPendingEvent(calibrationEvent);
+        this->Sleep(1000);
+    }
+
+    return ExitCode(NULL);
 }
