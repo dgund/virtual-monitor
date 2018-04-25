@@ -19,13 +19,14 @@ VirtualManager::VirtualManager() {
     this->calibrationNumCols = 0;
     this->calibrationCoords = NULL;
     this->averageYValues = NULL;
+    this->avgCalCoords = NULL;
     this->screenHeightVirtual = 0;
     this->screenWidthVirtual = 0;
 }
 
 /* frees everything that was created using new() */
 VirtualManager::~VirtualManager() {
-    // TODO free stuff
+    this->deleteCalibrationVars();
 }
 
 /* finds the length of a power regression curve between two y-points 
@@ -63,22 +64,29 @@ double VirtualManager::findArcLength(float A_f, float B_f, int y1, int y2) {
  * inputs: number of rows and number of cols of calibration points,
            array of (pointers to) 3D physical coordinates of calibration points */
 void VirtualManager::setCalibrationPoints(int rows, int cols, Coord3D **calibrationCoords) {
+    this->deleteCalibrationVars();
     // set private vars
     this->calibrationNumRows = rows;
     this->calibrationNumCols = cols;
     this->calibrationCoords = calibrationCoords;
     this->averageYValues = new int[rows]; //TODO is this how you create a new array?
+    this->avgCalCoords = new Coord3D*[rows*cols];
     // determine average y-value of each row of calibration points
-    int currIndex = 0;
     for (int row = 0; row < rows; row++) {
         int sumYValues = 0;
         for (int col = 0; col < cols; col++) {
-            sumYValues = calibrationCoords[currIndex]->y;
+            sumYValues += calibrationCoords[row*cols + col]->y;
         }
         this->averageYValues[row] = sumYValues / cols;
         // possible TODO - also compute variance of y-values and print warning if it's high
         //     ie, print warning if the y-values of a row vary a lot
-    currIndex++;
+        for (int col = 0; col < cols; col++) {
+            Coord3D *currCalPoint = new Coord3D;
+            currCalPoint->x = calibrationCoords[row*cols + col]->x;
+            currCalPoint->y = this->averageYValues[row];
+            currCalPoint->z = calibrationCoords[row*cols + col]->z;
+            this->avgCalCoords[row*cols + col] = currCalPoint;
+        }
     }
 }
 
@@ -114,23 +122,23 @@ void VirtualManager::setVirtualCoord(Interaction *interaction) {
     int interactionX = interaction->physicalLocation->x;
     int numCols = this->calibrationNumCols;
     int numRows = this->calibrationNumRows;
-    Coord3D **calCoords = this->calibrationCoords;
 
     /*** determine which calibration cell interaction is in ***/
     // determine which calibration rows the interaction is between
-    int calibrationRow; // the first calibration row whose y-value is greater than interaction's y-value
-    for (calibrationRow = 1; calibrationRow < numRows; calibrationRow++) {
-        if (this->averageYValues[calibrationRow] > interactionY) {
+    int calibrationRow; // the first calibration row whose y-value >= interaction's y-value
+    for (calibrationRow = 1; calibrationRow < numRows-1; calibrationRow++) {
+        if (this->averageYValues[calibrationRow] >= interactionY) {
             break; 
         }
     }
+    //std::cout << "calibrationRow: " << calibrationRow << std::endl;
     // determine which calibration cols the interaction is between 
-    int calibrationCol; // the first calibration col whose x-value is greater than the interaction's x-value
-    for (calibrationCol = numCols-2; calibrationCol >= 0; calibrationCol--) {
-        Coord3D *topPoint = calCoords[calibrationRow-1 * numCols + calibrationCol];
-        Coord3D *bottomPoint = calCoords[calibrationRow * numCols + calibrationCol];
-        int colXValue = getXValue(topPoint, bottomPoint, interactionY);
-        if (colXValue > interactionX) {
+    int calibrationCol; // the first calibration col whose x-value >= interaction's x-value
+    for (calibrationCol = numCols-2; calibrationCol >= 1; calibrationCol--) {
+        Coord3D *topPoint = this->avgCalCoords[(calibrationRow-1) * numCols + calibrationCol];
+        Coord3D *bottomPoint = this->avgCalCoords[calibrationRow * numCols + calibrationCol];
+        int colXValue = (int)(getXValue(topPoint, bottomPoint, interactionY));
+        if (colXValue >= interactionX) {
             break;
         }
     }
@@ -138,33 +146,34 @@ void VirtualManager::setVirtualCoord(Interaction *interaction) {
     /*** calculate percentRight ***/
     // calculate percentRight of calibrationCol
     double numCols_d = (double)numCols;
-    double percentRightCol_d = ((double)calibrationCol) / numCols_d;
+    double percentRightCol_d = ((double)calibrationCol) / (numCols_d-1.0);
     // calculate percentRight of interaction within calibration cell
-    Coord3D *topLeftPoint = calCoords[calibrationRow-1 * numCols + calibrationCol];
-    Coord3D *bottomLeftPoint = calCoords[calibrationRow * numCols + calibrationCol];
+    Coord3D *topLeftPoint = this->avgCalCoords[(calibrationRow-1) * numCols + calibrationCol];
+    Coord3D *bottomLeftPoint = this->avgCalCoords[calibrationRow * numCols + calibrationCol];
     double xLeft_d = getXValue(topLeftPoint, bottomLeftPoint, interactionY);
-    Coord3D *topRightPoint = calCoords[calibrationRow-1 * numCols + calibrationCol+1];
-    Coord3D *bottomRightPoint = calCoords[calibrationRow * numCols + calibrationCol+1];
+    Coord3D *topRightPoint = this->avgCalCoords[(calibrationRow-1) * numCols + calibrationCol+1];
+    Coord3D *bottomRightPoint = this->avgCalCoords[calibrationRow * numCols + calibrationCol+1];
     double xRight_d = getXValue(topRightPoint, bottomRightPoint, interactionY);
     double x_d = (double)(interactionX);
     double percentRightInteraction_d = (xLeft_d - x_d) / (xLeft_d - xRight_d);
     // calculate percentRight
-    double percentRight_d = percentRightCol_d + (percentRightInteraction_d / numCols_d);
+    double percentRight_d = percentRightCol_d + (percentRightInteraction_d / (numCols_d-1.0));
 
     /*** calculate percentDown ***/
     // calculate percentDown of calibrationRows
     double calibrationRow_d = (double)calibrationRow;
     double numRows_d = (double)numRows;
-    double percentDownRow_d = calibrationRow_d / numRows_d;
+    double percentDownRow_d = (calibrationRow_d-1.0) / (numRows_d-1.0);
     // calculate percentDown of interaction within calibration cell
     double yGreater_d = (double)(this->averageYValues[calibrationRow]);
     double yLess_d = (double)(this->averageYValues[calibrationRow-1]);
     double y_d = (double)(interactionY);
     double percentDownInteraction_d = (y_d - yLess_d) / (yGreater_d - yLess_d);
     // calculate percentDown
-    double percentDown_d = percentDownRow_d + (percentDownInteraction_d / numRows_d);
+    double percentDown_d = percentDownRow_d + (percentDownInteraction_d / (numRows_d-1.0));
 
      /*** set virtual coords ***/
+     // TODO cap percentRight/Down between 0 and 1
      interaction->virtualLocation->x = (int)(((double)this->screenWidthVirtual) * percentRight_d);
      interaction->virtualLocation->y = (int)(((double)this->screenHeightVirtual) * percentDown_d);
 
@@ -183,6 +192,19 @@ double VirtualManager::getXValue(Coord3D *topPoint, Coord3D *bottomPoint, int y)
     // x = (y - y2) * ((x2 - x1)/(y2 - y1)) + x2
     double slopeInverse_d = (xTop_d - xBottom_d) / (yTop_d - yBottom_d);
     return (y_d - yTop_d) * slopeInverse_d + xTop_d;
-}
 
 }
+
+void VirtualManager::deleteCalibrationVars() {
+    if (this->averageYValues != NULL) {
+        delete []this->averageYValues;
+    }
+    if (this->avgCalCoords != NULL) {
+        for (int i = 0; i < this->calibrationNumRows * this->calibrationNumCols; i++) {
+            delete this->avgCalCoords[i];
+        }
+        delete []avgCalCoords;
+    }
+}
+
+} // class VirtualManager

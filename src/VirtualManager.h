@@ -21,6 +21,7 @@ class VirtualManager {
         int calibrationNumCols;
         Coord3D **calibrationCoords;
         int *averageYValues; // average y-value of each calibration row
+        Coord3D **avgCalCoords;
         // vars about pixel size of screen
         int screenHeightVirtual;
         int screenWidthVirtual;
@@ -35,6 +36,7 @@ class VirtualManager {
     private:
         virtual double findArcLength(float A_f, float B_f, int y1, int y2);
         virtual double getXValue(Coord3D *topPoint, Coord3D *bottomPoint, int y);
+        virtual void deleteCalibrationVars();
 };
 
 } /* namespace virtualMonitor */
