@@ -15,18 +15,28 @@
 
 namespace virtualMonitor {
 
+/*
+ * Constructor for InteractionDetector
+ */
 InteractionDetector::InteractionDetector() {
     this->reader = new KinectReader();
     this->physicalManager = new PhysicalManager();
     this->referenceDepthFrame = NULL;
 }
 
+/*
+ * Deconstructor for InteractionDetector
+ */
 InteractionDetector::~InteractionDetector() {
     delete this->reader;
     delete this->physicalManager;
 }
 
+/*
+ * Starts reading data from Kinect and saves a reference frame
+ */
 int InteractionDetector::start() {
+    // Check for issues starting Kinect reader
     if (this->reader->start() < 0) {
         std::cout << "InteractionDetector: Could not start reader." << std::endl;
         return -1;
@@ -50,35 +60,34 @@ int InteractionDetector::start() {
     return 0;
 }
 
-Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
+/*
+ * Gets depth frame from Kinect and determines whether an interaction has occured 
+ * Input: isCalibration is whether we are in calibration mode and should not use VirtualManager
+ *          calibrationCoords is an array of pointers to physical calibration coordinates
+ * Output: pointer to an Interaction (NULL if no interaction occurred)
+ */
+Interaction *InteractionDetector::detectInteraction(bool isCalibrating) {
     KinectReaderFrames *frames = this->reader->readFrames();
+    // Check for issues reading frames
     if (frames == NULL) {
         std::cout << "VirtualMonitor: Could not read frames." << std::endl;
         return NULL;
     }
 
-    std::string interactionPPMFilename = "";
-    if (shouldOutputPPMData) {
-        interactionPPMFilename = INTERACTION_PPM_FILENAME;
-    }
+    // Call PhysicalManager to check for an interaction
+    Interaction *interaction = this->physicalManager->detectInteraction(frames->depth, "");
 
-    // Call VirtualManager to check for an interaction (with physical coordinates)
-    Interaction *interaction = this->physicalManager->detectInteraction(frames->depth, interactionPPMFilename);
-
-    if (interaction != NULL) {
+    // If there was an interaction and not currently calibrating, get virtual coordinates
+    if (interaction != NULL && !isCalibrating) {
         // TODO Call VirtualManager to get virtual coordinates
     }
 
-    if (shouldOutputPPMData) {
-        this->physicalManager->writeDepthFrameToPPM(frames->depth, DEPTH_PPM_FILENAME);
-        this->physicalManager->writeDepthFrameToSurfaceDepthPPM(frames->depth, SURFACEDEPTH_PPM_FILENAME);
-        this->physicalManager->writeDepthFrameToSurfaceSlopePPM(frames->depth, SURFACESLOPE_PPM_FILENAME);
-    }
-
+    // If current frame is the reference frame, a new reference is needed
     if (frames->depth == this->physicalManager->getReferenceFrame()) {
         this->physicalManager->setReferenceFrame(NULL);
     }
     this->reader->releaseFrames(frames);
+
     return interaction;
 }
 
@@ -93,6 +102,11 @@ int InteractionDetector::stop() {
     return 0;
 }
 
+/*
+ * Used for pre-supplied depth frame instead of live stream
+ * Inputs: shouldOutputPPMData is whether depth frame view should be saved (as PPM file)
+ * Outputs: pointer to an Interaction (NULL if no interaction occurred)
+ */
 Interaction *InteractionDetector::testDetectInteraction(bool shouldOutputPPMData) {
     std::string interactionPPMFilename = "";
     if (shouldOutputPPMData) {

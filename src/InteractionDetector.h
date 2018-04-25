@@ -18,7 +18,7 @@ class InteractionDetector {
         virtual ~InteractionDetector();
 
         virtual int start();
-        virtual Interaction *detectInteraction(bool shouldOutputPPMData=false);
+        virtual Interaction *detectInteraction(bool isCalibrating=false);
         virtual int stop();
         virtual Interaction *testDetectInteraction(bool shouldOutputPPMData=false);
         virtual int freeInteraction(Interaction *interaction);
