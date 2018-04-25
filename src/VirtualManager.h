@@ -19,7 +19,8 @@ class VirtualManager {
         // vars about calibration data
         int calibrationNumRows;
         int calibrationNumCols;
-        Coord3D **calibrationCoords;
+        Coord3D **calibrationCoordsPhysical;
+        Coord2D **calibrationCoordsVirtual;
         int *averageYValues; // average y-value of each calibration row
         Coord3D **avgCalCoords;
         // vars about pixel size of screen
@@ -29,7 +30,7 @@ class VirtualManager {
     public: 
         VirtualManager();
         virtual ~VirtualManager();
-        virtual void setCalibrationPoints(int rows, int cols, Coord3D **calibrationCoords);
+        virtual void setCalibrationPoints(int rows, int cols, Coord3D **calibrationCoordsPhysical, Coord2D **calibrationCoordsVirtual);
         virtual void setScreenVirtual(int screenHeightVirtual, int screenWidthVirtual);
         virtual void setVirtualCoord(Interaction *interaction);
     

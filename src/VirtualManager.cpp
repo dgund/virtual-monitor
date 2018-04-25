@@ -17,7 +17,8 @@ VirtualManager::VirtualManager() {
     this->B_f = 0.0;
     this->calibrationNumRows = 0;
     this->calibrationNumCols = 0;
-    this->calibrationCoords = NULL;
+    this->calibrationCoordsPhysical = NULL;
+    this->calibrationCoordsVirtual = NULL;
     this->averageYValues = NULL;
     this->avgCalCoords = NULL;
     this->screenHeightVirtual = 0;
@@ -63,28 +64,31 @@ double VirtualManager::findArcLength(float A_f, float B_f, int y1, int y2) {
 /* sets private vars for calibration points of screen (ie physical coords of screen)
  * inputs: number of rows and number of cols of calibration points,
            array of (pointers to) 3D physical coordinates of calibration points */
-void VirtualManager::setCalibrationPoints(int rows, int cols, Coord3D **calibrationCoords) {
+void VirtualManager::setCalibrationPoints(int rows, int cols, 
+         Coord3D **calibrationCoordsPhysical, Coord2D **calibrationCoordsVirtual) {
     this->deleteCalibrationVars();
     // set private vars
     this->calibrationNumRows = rows;
     this->calibrationNumCols = cols;
-    this->calibrationCoords = calibrationCoords;
-    this->averageYValues = new int[rows]; //TODO is this how you create a new array?
+    this->calibrationCoordsPhysical = calibrationCoordsPhysical;
+    this->calibrationCoordsVirtual = calibrationCoordsVirtual;
+    this->averageYValues = new int[rows]; 
     this->avgCalCoords = new Coord3D*[rows*cols];
     // determine average y-value of each row of calibration points
+    // and copy cal points, with averaged y-value, to avgCalCoords
     for (int row = 0; row < rows; row++) {
         int sumYValues = 0;
         for (int col = 0; col < cols; col++) {
-            sumYValues += calibrationCoords[row*cols + col]->y;
+            sumYValues += calibrationCoordsPhysical[row*cols + col]->y;
         }
         this->averageYValues[row] = sumYValues / cols;
         // possible TODO - also compute variance of y-values and print warning if it's high
         //     ie, print warning if the y-values of a row vary a lot
         for (int col = 0; col < cols; col++) {
             Coord3D *currCalPoint = new Coord3D;
-            currCalPoint->x = calibrationCoords[row*cols + col]->x;
+            currCalPoint->x = calibrationCoordsPhysical[row*cols + col]->x;
             currCalPoint->y = this->averageYValues[row];
-            currCalPoint->z = calibrationCoords[row*cols + col]->z;
+            currCalPoint->z = calibrationCoordsPhysical[row*cols + col]->z;
             this->avgCalCoords[row*cols + col] = currCalPoint;
         }
     }
@@ -102,7 +106,7 @@ void VirtualManager::setScreenVirtual(int screenHeightVirtual, int screenWidthVi
  * inputs: interaction whose virtual coordinate should be updated */
 void VirtualManager::setVirtualCoord(Interaction *interaction) {
     // make sure VirtualManager private vars have been initialized
-    if (this->calibrationCoords == NULL || this->screenHeightVirtual == 0) {
+    if (this->calibrationCoordsPhysical == NULL || this->screenHeightVirtual == 0) {
         // TODO print error or check more values?
         std::cout << "setVirtualCoord() called before initial values have been set\n";
         return;
