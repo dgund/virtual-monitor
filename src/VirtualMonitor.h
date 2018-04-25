@@ -80,7 +80,7 @@ private:
     virtual int startCalibration();
     virtual int stopCalibration();
     virtual void detectionThreadFn();
-    virtual void calibrationThreadFn();
+    //virtual void calibrationThreadFn();
 
     void OnDetect(wxCommandEvent& event);
     void OnCalibrate(wxCommandEvent& event);

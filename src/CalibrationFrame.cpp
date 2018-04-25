@@ -21,6 +21,7 @@ CalibrationFrame::CalibrationFrame(int numRows, int numCols)
 
     // Maximize frame to full-screen
     this->Maximize(true);
+    //this->ShowFullScreen(true);
 
     // Initialize buttons
     this->initializeButtons();

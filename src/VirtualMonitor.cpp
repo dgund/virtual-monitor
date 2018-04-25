@@ -164,6 +164,16 @@ void VirtualMonitorFrame::OnCalibrate(wxCommandEvent& event) {
 void VirtualMonitorFrame::OnCalibrateThreadUpdate(wxCommandEvent& event) {
     int calibrationIndex = event.GetInt();
     if (calibrationIndex < (CALIBRATION_ROWS * CALIBRATION_COLS) - 1) {
+        // Set the virtual coords of the calibration
+        this->calibrationFrame->getCurrentCalibrationPoint(this->calibrationVirtualCoords[calibrationIndex]);
+        
+        // Set the physical coords of the calibration
+        Coord3D *physicalLocation = (Coord3D *)event.GetClientData();
+        this->calibrationPhysicalCoords[calibrationIndex]->x = physicalLocation->x;
+        this->calibrationPhysicalCoords[calibrationIndex]->y = physicalLocation->y;
+        this->calibrationPhysicalCoords[calibrationIndex]->z = physicalLocation->z;
+
+        // Show next calibration point
         this->calibrationFrame->displayNextCalibrationPoint();
     } else {
         this->stopCalibration();
@@ -273,9 +283,7 @@ int VirtualMonitorFrame::startCalibration() {
     if (this->calibrationThread->Run() != wxTHREAD_NO_ERROR) {
         return -1;
     }
-
-    // TODO Start calibration interaction detection/handling on new thread
-    //this->calibrationThread = std::thread(&VirtualMonitorFrame::calibrationThreadFn, this);
+    
     return 0;
 }
 
@@ -287,9 +295,9 @@ int VirtualMonitorFrame::stopCalibration() {
 }
 
 /*  
- * Continuously reads Kinect data and looks for interactions
+ * Continuously reads Kinect data and looks for interactions and alerts main thread when they occur
  */
-void VirtualMonitorFrame::calibrationThreadFn() {
+wxThread::ExitCode VirtualMonitorCalibrationThread::Entry() {
     // Detects interactions with the virtual monitor from sensor data
     InteractionDetector *detector = new InteractionDetector();
     // Handles interactions with the virtual monitor
@@ -301,7 +309,7 @@ void VirtualMonitorFrame::calibrationThreadFn() {
     if (detector->start() < 0) {
         delete detector;
         delete handler;
-        return;
+        return ExitCode(NULL);
     }
 
     // Go through all calibration points
@@ -312,13 +320,11 @@ void VirtualMonitorFrame::calibrationThreadFn() {
         // Determine whether this interaction was a click up
         bool isCalibrationTapComplete = handler->handleInteraction(interaction);
         if (isCalibrationTapComplete) {
-            // Set the physical coords of the calibration
-            this->calibrationPhysicalCoords[calibrationIndex]->x = interaction->physicalLocation->x;
-            this->calibrationPhysicalCoords[calibrationIndex]->y = interaction->physicalLocation->y;
-            this->calibrationPhysicalCoords[calibrationIndex]->z = interaction->physicalLocation->z;
-            // Set the virtual coords of the calibraiton
-            this->calibrationFrame->getCurrentCalibrationPoint(this->calibrationVirtualCoords[calibrationIndex]);
-            // TODO Notify UI thread of calibration update
+            // Notify UI thread of calibration update
+            wxCommandEvent calibrationEvent(VIRTUALMONITOR_CALIBRATE_THREAD_UPDATE, wxID_ANY);
+            calibrationEvent.SetClientData(interaction->physicalLocation);
+            calibrationEvent.SetInt(calibrationIndex);
+            m_parent->AddPendingEvent(calibrationEvent);
             
             // Move on to next calibration point
             calibrationIndex++;
@@ -333,18 +339,7 @@ void VirtualMonitorFrame::calibrationThreadFn() {
 
     delete detector;
     delete handler;
-}
-
-/*** VirtualMonitorCalibrationThread ***/
-
-wxThread::ExitCode VirtualMonitorCalibrationThread::Entry() {
-    for (int i = 0; i < (CALIBRATION_ROWS * CALIBRATION_COLS); i++) {
-        // notify the main thread
-        wxCommandEvent calibrationEvent(VIRTUALMONITOR_CALIBRATE_THREAD_UPDATE, wxID_ANY);
-        calibrationEvent.SetInt(i);
-        m_parent->AddPendingEvent(calibrationEvent);
-        this->Sleep(1000);
-    }
-
+    
     return ExitCode(NULL);
 }
+
