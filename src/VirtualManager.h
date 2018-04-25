@@ -12,27 +12,31 @@ namespace virtualMonitor {
 
 class VirtualManager {
     private:
+        // vars about Kinect's view of screen
         double screenLength_d;
         float A_f;
         float B_f;
-        Coord3D bottomRight;
-        Coord3D bottomLeft;
-        Coord3D topRight;
-        Coord3D topLeft;
+        // vars about calibration data
+        int calibrationNumRows;
+        int calibrationNumCols;
+        Coord3D **calibrationCoords;
+        int *averageYValues; // average y-value of each calibration row
+        Coord3D **avgCalCoords;
+        // vars about pixel size of screen
         int screenHeightVirtual;
         int screenWidthVirtual;
 
     public: 
         VirtualManager();
         virtual ~VirtualManager();
+        virtual void setCalibrationPoints(int rows, int cols, Coord3D **calibrationCoords);
+        virtual void setScreenVirtual(int screenHeightVirtual, int screenWidthVirtual);
+        virtual void setVirtualCoord(Interaction *interaction);
     
     private:
         virtual double findArcLength(float A_f, float B_f, int y1, int y2);
-        virtual void setScreenPhysical(float A_f, float B_f, Coord3D bottomRight, Coord3D topRight, Coord3D bottomLeft, Coord3D topLeft);
-        virtual void setScreenVirtual(int screenHeightVirtual, int screenWidthVirtual);
-        virtual void setVirtualCoord(Interaction *interaction);
-        virtual double xLeftCurve(int y);
-        virtual double xRightCurve(int y);
+        virtual double getXValue(Coord3D *topPoint, Coord3D *bottomPoint, int y);
+        virtual void deleteCalibrationVars();
 };
 
 } /* namespace virtualMonitor */

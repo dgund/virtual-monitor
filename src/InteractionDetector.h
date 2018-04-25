@@ -9,6 +9,11 @@
 #include "KinectReader.h"
 #include "Interaction.h"
 #include "PhysicalManager.h"
+<<<<<<< HEAD
+=======
+#include "Viewer.h"
+#include "VirtualManager.h"
+>>>>>>> virtual-algorithm
 
 namespace virtualMonitor {
 
@@ -27,6 +32,7 @@ class InteractionDetector {
         KinectReader *reader;
         PhysicalManager *physicalManager;
         libfreenect2::Frame *referenceDepthFrame;
+        VirtualManager *virtualManager;
 };
 
 } /* namespace virtualMonitor */

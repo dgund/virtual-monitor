@@ -5,6 +5,7 @@
 
 #include "InteractionDetector.h"
 
+#include <cstring>
 #include <unistd.h>
 #include <iostream>
 
@@ -19,11 +20,13 @@ InteractionDetector::InteractionDetector() {
     this->reader = new KinectReader();
     this->physicalManager = new PhysicalManager();
     this->referenceDepthFrame = NULL;
+    this->virtualManager = new VirtualManager();
 }
 
 InteractionDetector::~InteractionDetector() {
     delete this->reader;
     delete this->physicalManager;
+    delete this->virtualManager;
 }
 
 int InteractionDetector::start() {
@@ -66,7 +69,10 @@ Interaction *InteractionDetector::detectInteraction(bool shouldOutputPPMData) {
     Interaction *interaction = this->physicalManager->detectInteraction(frames->depth, interactionPPMFilename);
 
     if (interaction != NULL) {
-        // TODO Call VirtualManager to get virtual coordinates
+        /*this->virtualManager->setVirtualCoord(interaction);
+        Coord2D vcoord = *(interaction->virtualLocation);
+        std::cout << "VIRTUAL COORDINATE: (" << vcoord.x << ", " << vcoord.y << ")\n";*/
+        std::cout << "PHYSICAL COORDINATE: (" << interaction->physicalLocation->x << ", " << interaction->physicalLocation->y << ")\n";
     }
 
     if (shouldOutputPPMData) {
@@ -111,6 +117,7 @@ Interaction *InteractionDetector::testDetectInteraction(bool shouldOutputPPMData
     
     if (interaction != NULL) {
         // TODO Call VirtualManager to get virtual coordinates
+        this->virtualManager->setVirtualCoord(interaction);
     }
 
     if (shouldOutputPPMData) {
