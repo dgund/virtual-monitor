@@ -16,8 +16,8 @@
 #define LABEL_CALIBRATE "Calibrate"
 
 // How many calibration rows and cols
-#define CALIBRATION_ROWS 3
-#define CALIBRATION_COLS 3
+#define CALIBRATION_ROWS 2
+#define CALIBRATION_COLS 4
 
 using namespace virtualMonitor;
 
@@ -162,6 +162,7 @@ void VirtualMonitorFrame::OnCalibrate(wxCommandEvent& event) {
 }
 
 void VirtualMonitorFrame::OnCalibrateThreadUpdate(wxCommandEvent& event) {
+    std::cout << "Calibration update..." << std::endl;
     int calibrationIndex = event.GetInt();
     if (calibrationIndex < (CALIBRATION_ROWS * CALIBRATION_COLS) - 1) {
         // Set the virtual coords of the calibration
@@ -172,12 +173,14 @@ void VirtualMonitorFrame::OnCalibrateThreadUpdate(wxCommandEvent& event) {
         this->calibrationPhysicalCoords[calibrationIndex]->x = physicalLocation->x;
         this->calibrationPhysicalCoords[calibrationIndex]->y = physicalLocation->y;
         this->calibrationPhysicalCoords[calibrationIndex]->z = physicalLocation->z;
+        std::cout << "Calibration updating with x: " << physicalLocation->x << " y: " << physicalLocation->y << " z: " << physicalLocation->z << std::endl;
 
         // Show next calibration point
         this->calibrationFrame->displayNextCalibrationPoint();
     } else {
         this->stopCalibration();
     }
+    std::cout << "Calibration update done..." << std::endl;
 }
 
 /*
@@ -241,6 +244,8 @@ void VirtualMonitorFrame::detectionThreadFn() {
         delete handler;
         return;
     }
+
+    std::cout << "Starting detection..." << std::endl;
 
     // Run until cancellation token
     while (!this->detectionShouldCancel) {
@@ -313,6 +318,8 @@ wxThread::ExitCode VirtualMonitorCalibrationThread::Entry() {
         return ExitCode(NULL);
     }
 
+    std::cout << "Starting calibration..." << std::endl;
+
     // Go through all calibration points
     int calibrationIndex = 0;
     while (calibrationIndex < (CALIBRATION_ROWS * CALIBRATION_COLS)) {
@@ -332,7 +339,9 @@ wxThread::ExitCode VirtualMonitorCalibrationThread::Entry() {
         }
         if (interaction != NULL) {
             // Free interaction
+            std::cout << "Calibration deleting interaction..." << std::endl;
             detector->freeInteraction(interaction);
+            std::cout << "Calibration deleting interaction done..." << std::endl;
         }
     }
 

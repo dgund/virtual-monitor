@@ -22,7 +22,7 @@ HysteresisCounter::HysteresisCounter(int max) {
 
 void HysteresisCounter::reset() {
     this->count = 0;
-    this->value = HysteresisValue::A;
+    this->value = HysteresisValue::B;
 }
 
 void HysteresisCounter::updateForValue(HysteresisValue value) {
@@ -69,6 +69,10 @@ bool InteractionHandler::handleInteraction(Interaction *interaction) {
     this->interactionCounter->updateForValue(isInteraction ? HysteresisCounter::HysteresisValue::A : HysteresisCounter::HysteresisValue::B);
     bool isOngoingInteraction = (this->interactionCounter->getValue() == HysteresisCounter::HysteresisValue::A);
 
+    if (!isInteraction) {
+        return false;
+    }
+
     // If there is an interaction, move the mouse to the virtual location
     if (isOngoingInteraction) {
         std::cout << "InteractionHandler: Interaction at x = " << interaction->physicalLocation->x << ", y = " << interaction->physicalLocation->y << ", depth = " << interaction->physicalLocation->z << std::endl;
@@ -98,7 +102,6 @@ bool InteractionHandler::handleInteraction(Interaction *interaction) {
         std::cout << "InteractionHandler: Interaction STOP" << std::endl;
         this->handleInteractionEndEvent();
     }
-
     return false;
 }
 
