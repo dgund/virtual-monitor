@@ -22,7 +22,7 @@ class VirtualManager {
         Coord3D **calibrationCoordsPhysical;
         Coord2D **calibrationCoordsVirtual;
         int *averageYValues; // average y-value of each calibration row
-        Coord3D **avgCalCoords;
+        Coord3D **avgCalCoords; // calibration points with averaged y-values
         // vars about pixel size of screen
         int screenHeightVirtual;
         int screenWidthVirtual;

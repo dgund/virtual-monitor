@@ -63,7 +63,8 @@ double VirtualManager::findArcLength(float A_f, float B_f, int y1, int y2) {
 
 /* sets private vars for calibration points of screen (ie physical coords of screen)
  * inputs: number of rows and number of cols of calibration points,
-           array of (pointers to) 3D physical coordinates of calibration points */
+           array of (pointers to) 3D physical coordinates of calibration points,
+           array of (pointers to) 2D virtual coordinates of calibration points */
 void VirtualManager::setCalibrationPoints(int rows, int cols, 
          Coord3D **calibrationCoordsPhysical, Coord2D **calibrationCoordsVirtual) {
     this->deleteCalibrationVars();
@@ -187,10 +188,15 @@ void VirtualManager::setVirtualCoord(Interaction *interaction) {
     double scaleY_d = (bottomVirtualY_d - topVirtualY_d) / screenHeight_d;
     double percentDown_d = percentDownRow_d + (percentDownInteraction_d * scaleY_d);
 
-     /*** set virtual coords ***/
-     // TODO cap percentRight/Down between 0 and 1
-     interaction->virtualLocation->x = (int)(screenWidth_d * percentRight_d);
-     interaction->virtualLocation->y = (int)(screenHeight_d * percentDown_d);
+    /*** make sure percentRight/Down are between 0.0 and 1.0 **/
+    percentRight_d = (percentRight_d > 0.0) ? percentRight_d : 0.0;
+    percentRight_d = (percentRight_d < 1.0) ? percentRight_d : 1.0;
+    percentDown_d = (percentDown_d > 0.0) ? percentDown_d : 0.0;
+    percentDown_d = (percentDown_d < 1.0) ? percentDown_d : 1.0;
+
+    /*** set virtual coords ***/
+    interaction->virtualLocation->x = (int)(screenWidth_d * percentRight_d);
+    interaction->virtualLocation->y = (int)(screenHeight_d * percentDown_d);
 
 }
 
