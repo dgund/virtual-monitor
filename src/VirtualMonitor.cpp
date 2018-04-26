@@ -232,7 +232,9 @@ void VirtualMonitorFrame::detectionThreadFn() {
     }
 #else
     // Pass in calibration data to be used by virtualManager
-    // detector->virtualManager->setCalibrationPoints(rows, cols, xMax, yMax, calibrationCoords array **)
+    wxDisplay display = wxDisplay();
+    detector->setCalibrationPoints(CALIBRATION_ROWS, CALIBRATION_COLS, this->calibrationPhysicalCoords, this->calibrationVirtualCoords);
+    detector->setScreenVirtual(display.GetGeometry().GetHeight(), display.GetGeometry().GetWidth());
 
     // Check for errors in starting detector
     if (detector->start() < 0) {

@@ -61,18 +61,8 @@ InteractionHandler::~InteractionHandler() {
  * Output: 
  */
 bool InteractionHandler::handleInteraction(Interaction *interaction) {
-    std::cout << "InteractionHandler: Interaction at x = " << interaction->physicalLocation->x << ", y = " << interaction->physicalLocation->y << ", depth = " << interaction->physicalLocation->z << std::endl;
-
-    // TODO should check for error?
-    /*
-    if (interaction == NULL || interaction->virtualLocation == NULL) {
-        return -1;
-    }
-    */
-
-    // TODO is it actually an interaction?
     // Coordinates for a real interaction provided
-    bool isInteraction = true;
+    bool isInteraction = (interaction != NULL);
 
     // A user's click will be sampled multiple times, so recognize whether this is first/last contact
     bool wasOngoingInteraction = (this->interactionCounter->getValue() == HysteresisCounter::HysteresisValue::A);
@@ -81,6 +71,8 @@ bool InteractionHandler::handleInteraction(Interaction *interaction) {
 
     // If there is an interaction, move the mouse to the virtual location
     if (isOngoingInteraction) {
+        std::cout << "InteractionHandler: Interaction at x = " << interaction->physicalLocation->x << ", y = " << interaction->physicalLocation->y << ", depth = " << interaction->physicalLocation->z << std::endl;
+
         this->lastLocation->x = interaction->virtualLocation->x;
         this->lastLocation->y = interaction->virtualLocation->y;
         this->lastTimestamp = interaction->time;
@@ -89,19 +81,22 @@ bool InteractionHandler::handleInteraction(Interaction *interaction) {
 
         // If this is a new interaction, click the mouse down
         if (!wasOngoingInteraction) {
+            std::cout << "InteractionHandler: Interaction START" << std::endl;
             this->firstLocation->x = interaction->virtualLocation->x;
             this->firstLocation->y = interaction->virtualLocation->y;
             this->firstTimestamp = interaction->time;
 
             this->handleInteractionStartEvent();
+
+            // Output bool only used in calibration
+            return true;
         }
     }
 
     // If there was an interaction that just ended, click the mouse up
     else if (wasOngoingInteraction) {
+        std::cout << "InteractionHandler: Interaction STOP" << std::endl;
         this->handleInteractionEndEvent();
-        // Output bool only used in calibration
-        return true;
     }
 
     return false;
