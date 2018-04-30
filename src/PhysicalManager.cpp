@@ -126,7 +126,6 @@ Interaction *PhysicalManager::detectInteraction(libfreenect2::Frame *depthFrame,
                             bool isAnomalySignificant = this->isAnomalySizeAtLeast(depthFrame, x, y, INTERACTION_ANOMALY_SIZE_MIN, DEPTH_SMOOTHING_DELTA);
                             if (isAnomalySignificant) {
                                 // Pixel is confirmed a significant point of interaction with the surface
-                                std::cout << "Interaction variance: " << variance << "\n";
                                 interaction = new Interaction();
                                 interaction->type = InteractionType::Tap;
                                 interaction->time = depthFrame->timestamp;

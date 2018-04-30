@@ -6,6 +6,10 @@ build/
 *.ppm
 !inputs/*.ppm
 
+# Calibration Data (except in /inputs)
+*.vmcal
+!inputs/*.vmcal
+
 # Prerequisites
 *.d
 

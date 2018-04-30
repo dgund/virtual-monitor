@@ -75,7 +75,7 @@ bool InteractionHandler::handleInteraction(Interaction *interaction) {
 
     // If there is an interaction, move the mouse to the virtual location
     if (isOngoingInteraction) {
-        std::cout << "InteractionHandler: Interaction at x = " << interaction->physicalLocation->x << ", y = " << interaction->physicalLocation->y << ", depth = " << interaction->physicalLocation->z << std::endl;
+        //std::cout << "InteractionHandler: Interaction at x = " << interaction->physicalLocation->x << ", y = " << interaction->physicalLocation->y << ", depth = " << interaction->physicalLocation->z << std::endl;
 
         this->lastLocation->x = interaction->virtualLocation->x;
         this->lastLocation->y = interaction->virtualLocation->y;

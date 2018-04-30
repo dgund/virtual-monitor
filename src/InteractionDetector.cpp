@@ -86,11 +86,8 @@ Interaction *InteractionDetector::detectInteraction(bool isCalibrating, bool sho
     Interaction *interaction = this->physicalManager->detectInteraction(frames->depth, interactionPPMFilename);
 
     if (interaction != NULL) {
-        /*this->virtualManager->setVirtualCoord(interaction);
-        Coord2D vcoord = *(interaction->virtualLocation);
-        std::cout << "VIRTUAL COORDINATE: (" << vcoord.x << ", " << vcoord.y << ")\n";*/
-        std::cout << "PHYSICAL COORDINATE: (" << interaction->physicalLocation->x << ", "
-            << interaction->physicalLocation->y << ")\n";
+        this->virtualManager->setVirtualCoord(interaction);
+        std::cout << "VIRTUAL COORDINATE: (" << interaction->virtualLocation->x << ", " << interaction->virtualLocation->y << ")\n";
     }
 
     // If option set to output physical depth PPM data, visualize that data

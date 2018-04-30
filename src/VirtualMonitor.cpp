@@ -5,6 +5,7 @@
 
 #include "VirtualMonitor.h"
 
+#include <fstream>
 #include <iostream>
 
 #include "InteractionDetector.h"
@@ -18,6 +19,8 @@
 // How many calibration rows and cols
 #define CALIBRATION_ROWS 2
 #define CALIBRATION_COLS 4
+
+#define CALIBRATION_DATA_FILENAME "calibration.vmcal"
 
 using namespace virtualMonitor;
 
@@ -165,16 +168,6 @@ void VirtualMonitorFrame::OnCalibrateThreadUpdate(wxCommandEvent& event) {
     std::cout << "Calibration update..." << std::endl;
     int calibrationIndex = event.GetInt();
     if (calibrationIndex < (CALIBRATION_ROWS * CALIBRATION_COLS) - 1) {
-        // Set the virtual coords of the calibration
-        this->calibrationFrame->getCurrentCalibrationPoint(this->calibrationVirtualCoords[calibrationIndex]);
-        
-        // Set the physical coords of the calibration
-        Coord3D *physicalLocation = (Coord3D *)event.GetClientData();
-        this->calibrationPhysicalCoords[calibrationIndex]->x = physicalLocation->x;
-        this->calibrationPhysicalCoords[calibrationIndex]->y = physicalLocation->y;
-        this->calibrationPhysicalCoords[calibrationIndex]->z = physicalLocation->z;
-        std::cout << "Calibration updating with x: " << physicalLocation->x << " y: " << physicalLocation->y << " z: " << physicalLocation->z << std::endl;
-
         // Show next calibration point
         this->calibrationFrame->displayNextCalibrationPoint();
     } else {
@@ -197,6 +190,8 @@ void VirtualMonitorFrame::OnExit(wxCommandEvent& event) {
  *  to continuously read Kinect data and look for interactions
  */
 int VirtualMonitorFrame::startDetection() {
+    // Read calibration from file
+    this->readCalibrationDataFromFile(this->calibrationPhysicalCoords, this->calibrationVirtualCoords, CALIBRATION_DATA_FILENAME);
     // Reset cancellation token
     this->detectionShouldCancel = false;
     // Start interaction detection/handling on new thread
@@ -300,10 +295,55 @@ int VirtualMonitorFrame::stopCalibration() {
     return 0;
 }
 
+int VirtualMonitorFrame::readCalibrationDataFromFile(Coord3D **calibrationPhysicalCoords, Coord2D **calibrationVirtualCoords, std::string calibrationDataFilename) {
+    std::ifstream calibrationFile(calibrationDataFilename);
+    if (!calibrationFile.is_open()) {
+        std::cout << "VirtualMonitor: Could not read calibration data." << std::endl;
+        return -1;
+    }
+
+    int calibrationIndex = 0;
+    int physicalX, physicalY, virtualX, virtualY;
+    float physicalZ;
+    while (calibrationFile >> physicalX >> physicalY >> physicalZ >> virtualX >> virtualY) {
+        Coord3D *physicalCoord = this->calibrationPhysicalCoords[calibrationIndex];
+        physicalCoord->x = physicalX;
+        physicalCoord->y = physicalY;
+        physicalCoord->z = physicalZ;
+        Coord2D *virtualCoord = this->calibrationVirtualCoords[calibrationIndex];
+        virtualCoord->x = virtualX;
+        virtualCoord->y = virtualY;
+        calibrationIndex++;
+    }
+
+    calibrationFile.close();
+    return 0;
+}
+
+int VirtualMonitorFrame::writeCalibrationDataToFile(Coord3D **calibrationPhysicalCoords, Coord2D **calibrationVirtualCoords, std::string calibrationDataFilename) {
+    std::ofstream calibrationFile(calibrationDataFilename);
+    if (!calibrationFile.is_open()) {
+        std::cout << "VirtualMonitor: Could not write calibration data." << std::endl;
+        return -1;
+    }
+
+    for (int calibrationIndex = 0; calibrationIndex < (CALIBRATION_ROWS * CALIBRATION_COLS); calibrationIndex++) {
+        Coord3D *physicalCoord = this->calibrationPhysicalCoords[calibrationIndex];
+        Coord2D *virtualCoord = this->calibrationVirtualCoords[calibrationIndex];
+        calibrationFile << physicalCoord->x << " " << physicalCoord->y << " " << physicalCoord->z << " " << virtualCoord->x << " " << virtualCoord->y << std::endl;
+    }
+
+
+    calibrationFile.close();
+    return 0;
+}
+
 /*  
  * Continuously reads Kinect data and looks for interactions and alerts main thread when they occur
  */
 wxThread::ExitCode VirtualMonitorCalibrationThread::Entry() {
+    // Parent frame
+    VirtualMonitorFrame *frame = (VirtualMonitorFrame *)this->m_parent;
     // Detects interactions with the virtual monitor from sensor data
     InteractionDetector *detector = new InteractionDetector();
     // Handles interactions with the virtual monitor
@@ -328,9 +368,17 @@ wxThread::ExitCode VirtualMonitorCalibrationThread::Entry() {
         // Determine whether this interaction was a click up
         bool isCalibrationTapComplete = handler->handleInteraction(interaction);
         if (isCalibrationTapComplete) {
+            // Set the virtual coords of the calibration
+            frame->calibrationFrame->getCurrentCalibrationPoint(frame->calibrationVirtualCoords[calibrationIndex]);
+            
+            // Set the physical coords of the calibration
+            frame->calibrationPhysicalCoords[calibrationIndex]->x = interaction->physicalLocation->x;
+            frame->calibrationPhysicalCoords[calibrationIndex]->y = interaction->physicalLocation->y;
+            frame->calibrationPhysicalCoords[calibrationIndex]->z = interaction->physicalLocation->z;
+            std::cout << "Calibration updating with x: " << interaction->physicalLocation->x << " y: " << interaction->physicalLocation->y << " z: " << interaction->physicalLocation->z << std::endl;
+
             // Notify UI thread of calibration update
             wxCommandEvent calibrationEvent(VIRTUALMONITOR_CALIBRATE_THREAD_UPDATE, wxID_ANY);
-            calibrationEvent.SetClientData(interaction->physicalLocation);
             calibrationEvent.SetInt(calibrationIndex);
             m_parent->AddPendingEvent(calibrationEvent);
             
@@ -339,11 +387,12 @@ wxThread::ExitCode VirtualMonitorCalibrationThread::Entry() {
         }
         if (interaction != NULL) {
             // Free interaction
-            std::cout << "Calibration deleting interaction..." << std::endl;
             detector->freeInteraction(interaction);
-            std::cout << "Calibration deleting interaction done..." << std::endl;
         }
     }
+
+    // Write calibration to file
+    frame->writeCalibrationDataToFile(frame->calibrationPhysicalCoords, frame->calibrationVirtualCoords, CALIBRATION_DATA_FILENAME);
 
     detector->stop();
 

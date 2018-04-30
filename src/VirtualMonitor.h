@@ -48,6 +48,12 @@ public:
 };
 
 class VirtualMonitorFrame: public wxFrame {
+// Public variables
+public:
+    Coord3D **calibrationPhysicalCoords;
+    Coord2D **calibrationVirtualCoords;
+    // Calibration frame interface
+    CalibrationFrame *calibrationFrame;
 // Private variables
 private:
     // wxWidgets controls
@@ -55,11 +61,6 @@ private:
     wxButton *detectButton;
     wxButton *calibrateButton;
     wxStaticText *textLabel;
-    // Calibration frame interface
-    CalibrationFrame *calibrationFrame;
-    // Array of physical coordinates of calibration interactions
-    Coord3D **calibrationPhysicalCoords;
-    Coord2D **calibrationVirtualCoords;
     // Whether currently Paused, Detecting, or Calibrating
     VirtualMonitorState state;
     // Threads for interaction managing
@@ -72,6 +73,8 @@ private:
 public:
     VirtualMonitorFrame();
     virtual ~VirtualMonitorFrame();
+    virtual int readCalibrationDataFromFile(Coord3D **calibrationPhysicalCoords, Coord2D **calibrationVirtualCoords, std::string calibrationDataFilename);
+    virtual int writeCalibrationDataToFile(Coord3D **calibrationPhysicalCoords, Coord2D **calibrationVirtualCoords, std::string calibrationDataFilename);
 
 // Private methods
 private:
@@ -80,7 +83,6 @@ private:
     virtual int startCalibration();
     virtual int stopCalibration();
     virtual void detectionThreadFn();
-    //virtual void calibrationThreadFn();
 
     void OnDetect(wxCommandEvent& event);
     void OnCalibrate(wxCommandEvent& event);
