@@ -43,6 +43,9 @@ public:
     virtual KinectReaderFrames *readFrames();
     virtual int releaseFrames(KinectReaderFrames *frames);
     virtual int stop();
+private:
+    virtual int open();
+    virtual int close();
 };
 
 } /* namespace virtualMonitor */

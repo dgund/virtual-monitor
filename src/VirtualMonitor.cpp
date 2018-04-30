@@ -88,6 +88,10 @@ VirtualMonitorFrame::VirtualMonitorFrame() : wxFrame(NULL, wxID_ANY, wxT("Virtua
     }
 
     this->calibrationFrame = NULL;
+
+    this->detector = new InteractionDetector();
+    this->calibrationHandler = new CalibrationInteractionHandler();
+    this->mouseHandler = new MouseInteractionHandler();
 }
 
 /*
@@ -111,6 +115,10 @@ VirtualMonitorFrame::~VirtualMonitorFrame() {
         delete this->calibrationVirtualCoords[i];
     }
     delete[] this->calibrationVirtualCoords;
+
+    delete this->detector;
+    delete this->calibrationHandler;
+    delete this->mouseHandler;
 }
 
 /*
@@ -212,31 +220,22 @@ int VirtualMonitorFrame::stopDetection() {
  * Continuously reads Kinect data and looks for interactions
  */
 void VirtualMonitorFrame::detectionThreadFn() {
-    // Detects interactions with the virtual monitor from sensor data
-    InteractionDetector *detector = new InteractionDetector();
-    // Handles interactions with the virtual monitor
-        // Determines click down and click up locations
-        // Simulates clicks
-    MouseInteractionHandler *handler = new MouseInteractionHandler();
-
 #ifdef VIRTUALMONITOR_TEST_INPUTS
     // Detect interaction with isCalibrating = false, outputPPMData = true
-    Interaction *interaction = detector->testDetectInteraction(false, true);
+    Interaction *interaction = this->detector->testDetectInteraction(false, true);
     // Handle interaction
-    handler->handleInteraction(interaction);
+    this->mouseHandler->handleInteraction(interaction);
     if (interaction != NULL) {
         // Free interaction
-        detector->freeInteraction(interaction);
+        this->detector->freeInteraction(interaction);
     }
 #else
     // Pass in calibration data to be used by virtualManager
-    detector->setCalibrationPoints(CALIBRATION_ROWS, CALIBRATION_COLS, this->calibrationPhysicalCoords, this->calibrationVirtualCoords);
-    detector->setScreenVirtual(wxSystemSettings::GetMetric(wxSYS_SCREEN_Y), wxSystemSettings::GetMetric(wxSYS_SCREEN_X));
+    this->detector->setCalibrationPoints(CALIBRATION_ROWS, CALIBRATION_COLS, this->calibrationPhysicalCoords, this->calibrationVirtualCoords);
+    this->detector->setScreenVirtual(wxSystemSettings::GetMetric(wxSYS_SCREEN_Y), wxSystemSettings::GetMetric(wxSYS_SCREEN_X));
 
     // Check for errors in starting detector
-    if (detector->start() < 0) {
-        delete detector;
-        delete handler;
+    if (this->detector->start() < 0) {
         return;
     }
 
@@ -245,23 +244,20 @@ void VirtualMonitorFrame::detectionThreadFn() {
     // Run until cancellation token
     while (!this->detectionShouldCancel) {
         // Detect interaction with isCalibrating = false
-        Interaction *interaction = detector->detectInteraction();
+        Interaction *interaction = this->detector->detectInteraction();
         // Handle interaction
-        handler->handleInteraction(interaction);
+        this->mouseHandler->handleInteraction(interaction);
         if (interaction != NULL) {
             // Free interaction
-            detector->freeInteraction(interaction);
+            this->detector->freeInteraction(interaction);
         }
 #ifdef VIRTUALMONITOR_TEST_SNAPSHOT
         break;
 #endif
     }
 
-    detector->stop();
+    this->detector->stop();
 #endif
-
-    delete detector;
-    delete handler;
 }
 
 /*** Calibration ***/
@@ -343,18 +339,10 @@ int VirtualMonitorFrame::writeCalibrationDataToFile(Coord3D **calibrationPhysica
  */
 wxThread::ExitCode VirtualMonitorCalibrationThread::Entry() {
     // Parent frame
-    VirtualMonitorFrame *frame = (VirtualMonitorFrame *)this->m_parent;
-    // Detects interactions with the virtual monitor from sensor data
-    InteractionDetector *detector = new InteractionDetector();
-    // Handles interactions with the virtual monitor
-        // Determines click down and click up locations
-        // Updates calibrationCoords array
-    CalibrationInteractionHandler *handler = new CalibrationInteractionHandler();
+    VirtualMonitorFrame *parentFrame = (VirtualMonitorFrame *)this->m_parent;
 
     // Check for errors in starting detector
-    if (detector->start() < 0) {
-        delete detector;
-        delete handler;
+    if (parentFrame->detector->start() < 0) {
         return ExitCode(NULL);
     }
 
@@ -364,17 +352,17 @@ wxThread::ExitCode VirtualMonitorCalibrationThread::Entry() {
     int calibrationIndex = 0;
     while (calibrationIndex < (CALIBRATION_ROWS * CALIBRATION_COLS)) {
         // Detect interaction with isCalibrating = true
-        Interaction *interaction = detector->detectInteraction(true);
+        Interaction *interaction = parentFrame->detector->detectInteraction(true);
         // Determine whether this interaction was a click up
-        bool isCalibrationTapComplete = handler->handleInteraction(interaction);
+        bool isCalibrationTapComplete = parentFrame->calibrationHandler->handleInteraction(interaction);
         if (isCalibrationTapComplete) {
             // Set the virtual coords of the calibration
-            frame->calibrationFrame->getCurrentCalibrationPoint(frame->calibrationVirtualCoords[calibrationIndex]);
+            parentFrame->calibrationFrame->getCurrentCalibrationPoint(parentFrame->calibrationVirtualCoords[calibrationIndex]);
             
             // Set the physical coords of the calibration
-            frame->calibrationPhysicalCoords[calibrationIndex]->x = interaction->physicalLocation->x;
-            frame->calibrationPhysicalCoords[calibrationIndex]->y = interaction->physicalLocation->y;
-            frame->calibrationPhysicalCoords[calibrationIndex]->z = interaction->physicalLocation->z;
+            parentFrame->calibrationPhysicalCoords[calibrationIndex]->x = interaction->physicalLocation->x;
+            parentFrame->calibrationPhysicalCoords[calibrationIndex]->y = interaction->physicalLocation->y;
+            parentFrame->calibrationPhysicalCoords[calibrationIndex]->z = interaction->physicalLocation->z;
             std::cout << "Calibration updating with x: " << interaction->physicalLocation->x << " y: " << interaction->physicalLocation->y << " z: " << interaction->physicalLocation->z << std::endl;
 
             // Notify UI thread of calibration update
@@ -387,17 +375,14 @@ wxThread::ExitCode VirtualMonitorCalibrationThread::Entry() {
         }
         if (interaction != NULL) {
             // Free interaction
-            detector->freeInteraction(interaction);
+            parentFrame->detector->freeInteraction(interaction);
         }
     }
 
     // Write calibration to file
-    frame->writeCalibrationDataToFile(frame->calibrationPhysicalCoords, frame->calibrationVirtualCoords, CALIBRATION_DATA_FILENAME);
+    parentFrame->writeCalibrationDataToFile(parentFrame->calibrationPhysicalCoords, parentFrame->calibrationVirtualCoords, CALIBRATION_DATA_FILENAME);
 
-    detector->stop();
-
-    delete detector;
-    delete handler;
+    parentFrame->detector->stop();
     
     return ExitCode(NULL);
 }

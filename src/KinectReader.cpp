@@ -5,7 +5,6 @@
 
 #include "KinectReader.h"
 
-#include <unistd.h>
 #include <iostream>
 
 #include <libfreenect2/logger.h>
@@ -23,7 +22,7 @@ KinectReader::KinectReader(bool readColor, bool readDepthAndInfrared, bool readC
     this->readColorDepth = readColorDepth;
     this->timeout = timeout;
 
-    // device is allocated in start()
+    // device is allocated in open()
     this->device = NULL;
 
     // Determine frame types
@@ -42,14 +41,19 @@ KinectReader::KinectReader(bool readColor, bool readDepthAndInfrared, bool readC
 
     // Disable libfreenect logging for now
     libfreenect2::setGlobalLogger(NULL);
+
+    // Open and connect to the Kinect
+    this->open();
 }
 
 KinectReader::~KinectReader() {
-    this->stop();
+    // Close and disconnect from the Kinect
+    this->close();
+
     delete this->listener;
 }
 
-int KinectReader::start() {
+int KinectReader::open() {
     if(this->freenect.enumerateDevices() == 0) {
         std::cout << "KinectReader: No device connected." << std::endl;
         return -1;
@@ -67,6 +71,10 @@ int KinectReader::start() {
     this->device->setColorFrameListener(this->listener);
     this->device->setIrAndDepthFrameListener(this->listener);
 
+    return 0;
+}
+
+int KinectReader::start() {
     // Start device
     if (!this->device->start()) {
         std::cout << "KinectReader: Cannot start device." << std::endl;
@@ -136,15 +144,23 @@ int KinectReader::stop() {
         delete this->registration;
         this->registration = NULL;
     }
+
     if (this->device != NULL) {
         this->device->stop();
+    }
+    return 0;
+}
+
+int KinectReader::close() {
+    if (this->device != NULL) {
         this->device->close();
         delete this->device;
         this->device = NULL;
+    }
+    if (this->pipeline != NULL) {
         delete this->pipeline;
         this->pipeline = NULL;
     }
-
     return 0;
 }
 

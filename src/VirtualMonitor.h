@@ -12,6 +12,9 @@
 #include <wx/wx.h>
 
 #include "CalibrationFrame.h"
+#include "CalibrationInteractionHandler.h"
+#include "InteractionDetector.h"
+#include "MouseInteractionHandler.h"
 
 #undef VIRTUALMONITOR_TEST_INPUTS
 #undef VIRTUALMONITOR_TEST_SNAPSHOT
@@ -50,6 +53,11 @@ public:
 class VirtualMonitorFrame: public wxFrame {
 // Public variables
 public:
+    // Interaction Detector and Handler
+    InteractionDetector *detector;
+    CalibrationInteractionHandler *calibrationHandler;
+    MouseInteractionHandler *mouseHandler;
+    // Calibration data
     Coord3D **calibrationPhysicalCoords;
     Coord2D **calibrationVirtualCoords;
     // Calibration frame interface
