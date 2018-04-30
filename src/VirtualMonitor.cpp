@@ -8,17 +8,17 @@
 #include <fstream>
 #include <iostream>
 
+#include "CalibrationInteractionHandler.h"
 #include "InteractionDetector.h"
-#include "InteractionHandler.h"
-#include "unistd.h"
+#include "MouseInteractionHandler.h"
 
 #define LABEL_START_DETECTION "Start Detection"
 #define LABEL_STOP_DETECTION "Stop Detection"
 #define LABEL_CALIBRATE "Calibrate"
 
 // How many calibration rows and cols
-#define CALIBRATION_ROWS 2
-#define CALIBRATION_COLS 4
+#define CALIBRATION_ROWS 3
+#define CALIBRATION_COLS 3
 
 #define CALIBRATION_DATA_FILENAME "calibration.vmcal"
 
@@ -217,7 +217,7 @@ void VirtualMonitorFrame::detectionThreadFn() {
     // Handles interactions with the virtual monitor
         // Determines click down and click up locations
         // Simulates clicks
-    InteractionHandler *handler = new InteractionHandler();
+    MouseInteractionHandler *handler = new MouseInteractionHandler();
 
 #ifdef VIRTUALMONITOR_TEST_INPUTS
     // Detect interaction with isCalibrating = false, outputPPMData = true
@@ -349,7 +349,7 @@ wxThread::ExitCode VirtualMonitorCalibrationThread::Entry() {
     // Handles interactions with the virtual monitor
         // Determines click down and click up locations
         // Updates calibrationCoords array
-    InteractionHandler *handler = new InteractionHandler();
+    CalibrationInteractionHandler *handler = new CalibrationInteractionHandler();
 
     // Check for errors in starting detector
     if (detector->start() < 0) {

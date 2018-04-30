@@ -7,10 +7,13 @@
 #define MOUSEINTERACTIONHANDLER_H
 
 #include "InteractionHandler.h"
+#include "MouseController.h"
 
 namespace virtualMonitor {
 
 class MouseInteractionHandler : public InteractionHandler {
+private:
+    MouseController mouseController;
 public:
     MouseInteractionHandler();
 

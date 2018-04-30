@@ -85,7 +85,7 @@ Interaction *InteractionDetector::detectInteraction(bool isCalibrating, bool sho
     // Call PhysicalManager to check for an interaction and update physicalLocation coordiantes
     Interaction *interaction = this->physicalManager->detectInteraction(frames->depth, interactionPPMFilename);
 
-    if (interaction != NULL) {
+    if (!isCalibrating && interaction != NULL) {
         this->virtualManager->setVirtualCoord(interaction);
         std::cout << "VIRTUAL COORDINATE: (" << interaction->virtualLocation->x << ", " << interaction->virtualLocation->y << ")\n";
     }

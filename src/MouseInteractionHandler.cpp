@@ -12,14 +12,17 @@ namespace virtualMonitor {
 MouseInteractionHandler::MouseInteractionHandler() : InteractionHandler() {}
 
 int MouseInteractionHandler::handleInteractionStartEvent() {
+    mouseController.leftMouseDown(this->lastLocation);
     return 0;
 }
 
 int MouseInteractionHandler::handleInteractionMoveEvent() {
+    mouseController.move(this->lastLocation);
     return 0;
 }
 
 int MouseInteractionHandler::handleInteractionEndEvent() {
+    mouseController.leftMouseUp(this->lastLocation);
     return 0;
 }
 

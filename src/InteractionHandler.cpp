@@ -69,6 +69,12 @@ bool InteractionHandler::handleInteraction(Interaction *interaction) {
     this->interactionCounter->updateForValue(isInteraction ? HysteresisCounter::HysteresisValue::A : HysteresisCounter::HysteresisValue::B);
     bool isOngoingInteraction = (this->interactionCounter->getValue() == HysteresisCounter::HysteresisValue::A);
 
+    // If there was an interaction that just ended, click the mouse up
+    if (!isOngoingInteraction && wasOngoingInteraction) {
+        std::cout << "InteractionHandler: Interaction STOP" << std::endl;
+        this->handleInteractionEndEvent();
+    }
+
     if (!isInteraction) {
         return false;
     }
@@ -97,11 +103,6 @@ bool InteractionHandler::handleInteraction(Interaction *interaction) {
         }
     }
 
-    // If there was an interaction that just ended, click the mouse up
-    else if (wasOngoingInteraction) {
-        std::cout << "InteractionHandler: Interaction STOP" << std::endl;
-        this->handleInteractionEndEvent();
-    }
     return false;
 }
 
