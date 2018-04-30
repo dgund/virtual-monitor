@@ -56,7 +56,7 @@ int KinectReader::start() {
     }
 
     std::string deviceSerial = this->freenect.getDefaultDeviceSerialNumber();
-    this->pipeline = new libfreenect2::OpenGLPacketPipeline();
+    this->pipeline = new libfreenect2::OpenCLPacketPipeline(-1);
 
     this->device = this->freenect.openDevice(deviceSerial, pipeline);
     if (this->device == NULL) {
