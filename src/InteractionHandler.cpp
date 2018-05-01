@@ -12,8 +12,8 @@
 namespace virtualMonitor {
 
 #define INTERACTION_TIME_DIFFERENCE_MAX 30
-
 #define HYSTERESIS_MAX 5
+#define OUTPUT_FILE "outputFile.csv"
 
 HysteresisCounter::HysteresisCounter(int max) {
     this->max = max;
@@ -128,6 +128,29 @@ uint32_t InteractionHandler::timeDifference(uint32_t time1, uint32_t time2) {
     else {
         return std::numeric_limits<uint32_t>::max() - time1 + time2;
     }
+}
+
+/*
+ * Writes comma-separated coordinates and timestamp of a button creation to a file
+ */
+void InteractionHandler::writeTapLocation(int xpos, int ypos) {
+    // get current time
+    struct timeval currTimeStruct;
+    ::gettimeofday(&currTimeStruct, NULL);
+    std::string currTimeStr = std::to_string(currTimeStruct.tv_sec*1000000 + currTimeStruct.tv_usec);
+    
+    // construct csv string
+    std::string xposStr = std::to_string(xpos);
+    std::string yposStr = std::to_string(ypos);
+    std::string csvStr = xposStr + "," + yposStr +"," + currTimeStr + "\n";
+    char *outputBuffer = new char[csvStr.length()+1];
+    std::strcpy(outputBuffer, csvStr.c_str());
+
+    std::ofstream outputFile;
+    outputFile.open(OUTPUT_FILE, std::fstream::app);
+    outputFile << outputBuffer;
+    outputFile.close();
+    delete []outputBuffer;
 }
 
 } /* namespace virtualMonitor */

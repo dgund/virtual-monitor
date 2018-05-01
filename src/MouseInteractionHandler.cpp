@@ -4,7 +4,6 @@
 */
 
 #include "MouseInteractionHandler.h"
-
 #include <iostream>
 
 namespace virtualMonitor {
@@ -23,6 +22,8 @@ int MouseInteractionHandler::handleInteractionMoveEvent() {
 
 int MouseInteractionHandler::handleInteractionEndEvent() {
     mouseController.leftMouseUp(this->lastLocation);
+    // write to output file
+    writeTapLocation(this->lastLocation->x, this->lastLocation->y);
     return 0;
 }
 

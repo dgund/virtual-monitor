@@ -8,6 +8,11 @@
 
 #include "Interaction.h"
 
+#include <sys/time.h>
+#include <time.h>
+#include <iostream>
+#include <fstream>
+
 namespace virtualMonitor {
 
 class HysteresisCounter {
@@ -37,8 +42,8 @@ private:
 public:
     InteractionHandler();
     virtual ~InteractionHandler();
-
     virtual bool handleInteraction(Interaction *interaction);
+    virtual void writeTapLocation(int xpos, int ypos);
 private:
     virtual int handleInteractionStartEvent();
     virtual int handleInteractionMoveEvent();
