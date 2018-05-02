@@ -12,33 +12,46 @@
 namespace virtualMonitor {
 
 #define INTERACTION_TIME_DIFFERENCE_MAX 30
-#define HYSTERESIS_MAX 5
+
+#define NOINTERACTION_COUNT_MAX 10
+#define INTERACTION_COUNT_MAX 2
+
 #define OUTPUT_FILE "outputFile.csv"
 
-HysteresisCounter::HysteresisCounter(int max) {
-    this->max = max;
+HysteresisCounter::HysteresisCounter(int maxA, int maxB) {
+    this->maxA = maxA;
+    this->maxB = maxB;
     this->reset();
 }
 
 void HysteresisCounter::reset() {
-    this->count = 0;
-    this->value = HysteresisValue::B;
+    HysteresisValue resetValue = HysteresisValue::A;
+    this->value = resetValue;
+    this->count = maxForValue(resetValue);
 }
 
 void HysteresisCounter::updateForValue(HysteresisValue value) {
     if (value == this->value) {
-        this->count = std::min(this->count + 1, this->max);
+        this->count = std::min(this->count + 1, maxForValue(value));
     } else {
         this->count--;
         if (this->count <= 0) {
             this->value = value;
-            this->count = this->max;
+            this->count = maxForValue(value);
         }
     }
 }
 
+int HysteresisCounter::maxForValue(HysteresisValue value) {
+    if (value == HysteresisValue::A) {
+        return this->maxA;
+    } else {
+        return this->maxB;
+    }
+}
+
 InteractionHandler::InteractionHandler() {
-    this->interactionCounter = new HysteresisCounter(HYSTERESIS_MAX);
+    this->interactionCounter = new HysteresisCounter(NOINTERACTION_COUNT_MAX, INTERACTION_COUNT_MAX);
     this->firstLocation = new Coord2D();
     this->firstLocation->x = -1;
     this->firstLocation->y = -1;
@@ -64,10 +77,13 @@ bool InteractionHandler::handleInteraction(Interaction *interaction) {
     // Coordinates for a real interaction provided
     bool isInteraction = (interaction != NULL);
 
+    HysteresisCounter::HysteresisValue noInteractionValue = HysteresisCounter::HysteresisValue::A;
+    HysteresisCounter::HysteresisValue interactionValue = HysteresisCounter::HysteresisValue::B;
+
     // A user's click will be sampled multiple times, so recognize whether this is first/last contact
-    bool wasOngoingInteraction = (this->interactionCounter->getValue() == HysteresisCounter::HysteresisValue::A);
-    this->interactionCounter->updateForValue(isInteraction ? HysteresisCounter::HysteresisValue::A : HysteresisCounter::HysteresisValue::B);
-    bool isOngoingInteraction = (this->interactionCounter->getValue() == HysteresisCounter::HysteresisValue::A);
+    bool wasOngoingInteraction = (this->interactionCounter->getValue() == interactionValue);
+    this->interactionCounter->updateForValue(isInteraction ? interactionValue : noInteractionValue);
+    bool isOngoingInteraction = (this->interactionCounter->getValue() == interactionValue);
 
     // If there was an interaction that just ended, click the mouse up
     if (!isOngoingInteraction && wasOngoingInteraction) {

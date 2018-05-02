@@ -19,16 +19,17 @@ class HysteresisCounter {
 public:
     enum HysteresisValue { A, B };
 public:
-    int max;
+    int maxA, maxB;
 private:
     int count;
     HysteresisValue value;
 public:
-    HysteresisCounter(int max);
+    HysteresisCounter(int maxA, int maxB);
     virtual ~HysteresisCounter() {}
     virtual void reset();
     virtual void updateForValue(HysteresisValue value);
     virtual HysteresisValue getValue() { return this->value; }
+    virtual int maxForValue(HysteresisValue value);
 };
 
 class InteractionHandler {
