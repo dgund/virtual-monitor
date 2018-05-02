@@ -75,7 +75,9 @@ InteractionHandler::~InteractionHandler() {
  */
 bool InteractionHandler::handleInteraction(Interaction *interaction) {
     // Coordinates for a real interaction provided
-    bool isInteraction = (interaction != NULL);
+    bool isInteraction = (interaction != NULL &&
+                          interaction->virtualLocation->x >= 0 &&
+                          interaction->virtualLocation->y >= 0);
 
     HysteresisCounter::HysteresisValue noInteractionValue = HysteresisCounter::HysteresisValue::A;
     HysteresisCounter::HysteresisValue interactionValue = HysteresisCounter::HysteresisValue::B;

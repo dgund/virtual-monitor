@@ -188,11 +188,25 @@ void VirtualManager::setVirtualCoord(Interaction *interaction) {
     double scaleY_d = (bottomVirtualY_d - topVirtualY_d) / screenHeight_d;
     double percentDown_d = percentDownRow_d + (percentDownInteraction_d * scaleY_d);
 
-    /*** make sure percentRight/Down are between 0.0 and 1.0 **/
-    percentRight_d = (percentRight_d > 0.0) ? percentRight_d : 0.0;
-    percentRight_d = (percentRight_d < 1.0) ? percentRight_d : 1.0;
-    percentDown_d = (percentDown_d > 0.0) ? percentDown_d : 0.0;
-    percentDown_d = (percentDown_d < 1.0) ? percentDown_d : 1.0;
+    /*** make sure percentRight/Down are between 0.0 and 1.0, or error value **/
+    if (-0.05 <= percentRight_d && percentRight_d < 0.0) {
+        percentRight_d = 0.0;
+    }
+    if (1.0 < percentRight_d && percentRight_d <= 1.05) {
+        percentRight_d = 1.0;
+    }
+    if (percentRight_d > 1.05 || percentRight_d < -0.05) {
+        percentRight_d = -1.0;
+    }
+    if (-0.05 <= percentDown_d && percentDown_d < 0.0) {
+        percentDown_d = 0.0;
+    }
+    if (1.0 < percentDown_d && percentDown_d <= 1.05) {
+        percentDown_d = 1.0;
+    }
+    if (percentDown_d > 1.05 || percentDown_d < -0.05) {
+        percentDown_d = -1.0;
+    }
 
     /*** set virtual coords ***/
     interaction->virtualLocation->x = (int)(screenWidth_d * percentRight_d);
